@@ -222,7 +222,7 @@ export class PayPalClient {
       method,
       payment_date: date,
       amount: { currency_code: currency, value: amount.toFixed(2) },
-      note: "Recorded via Chase",
+      note: "Recorded via Sorted",
     });
   }
 

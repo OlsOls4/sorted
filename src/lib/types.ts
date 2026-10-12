@@ -1,4 +1,4 @@
-// Core domain types for Chase. Shared by client and server.
+// Core domain types for Sorted. Shared by client and server.
 
 export type InvoiceStatus =
   | "DRAFT"
@@ -115,7 +115,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export type EngineInfo = {
   id: string; // e.g. "gemini", "openai", "anthropic", "rules"
-  label: string; // human readable, e.g. "Gemini 2.5 Flash" or "Chase rules engine"
+  label: string; // human readable, e.g. "Gemini 2.5 Flash" or "Sorted rules engine"
   ai: boolean;
 };
 

@@ -20,7 +20,7 @@ export interface Toast {
   text: string;
 }
 
-export function useChase() {
+export function useSorted() {
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const [mode, setModeState] = useState<Mode>("demo");
@@ -208,5 +208,5 @@ export function useChase() {
   };
 }
 
-export type ChaseApi = ReturnType<typeof useChase>;
+export type SortedApi = ReturnType<typeof useSorted>;
 export { ApiError };

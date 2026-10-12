@@ -81,8 +81,8 @@ export function PayPalConnect({
         </div>
       </div>
       <ul className="mt-3 space-y-1 text-xs text-muted">
-        <li>• Sandbox only: Chase pins these keys to api-m.sandbox.paypal.com, so no real money can move.</li>
-        <li>• Stored only in this browser&apos;s local storage and sent over HTTPS with each request. Chase&apos;s server never saves or logs them.</li>
+        <li>• Sandbox only: Sorted pins these keys to api-m.sandbox.paypal.com, so no real money can move.</li>
+        <li>• Stored only in this browser&apos;s local storage and sent over HTTPS with each request. Sorted&apos;s server never saves or logs them.</li>
         <li>• Invoices go to sandbox emails. Use a sandbox personal account to pay them.</li>
       </ul>
       {error && <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">Couldn&apos;t connect: {error}</div>}

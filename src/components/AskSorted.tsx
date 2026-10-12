@@ -17,7 +17,7 @@ const VIA_LABEL: Record<NonNullable<ToolTraceEntry["via"]>, string> = {
   ledger: "ledger",
 };
 
-export function AskChase({
+export function AskSorted({
   mode,
   settings,
   invoices,
@@ -31,7 +31,7 @@ export function AskChase({
   const [msgs, setMsgs] = useState<UIMsg[]>([
     {
       role: "assistant",
-      content: "Hi, I'm Chase. Ask me anything about who owes you, what you've earned, or tell me to chase someone. I'll always check with you before anything goes out.",
+      content: "Hi, I'm the Sorted assistant. Ask me anything about who owes you, what you've earned, or tell me to chase someone. I'll always check with you before anything goes out.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -73,7 +73,7 @@ export function AskChase({
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div>
           <h2 id="ask" className="text-base font-bold">
-            Ask Chase
+            Ask Sorted
           </h2>
           <p className="text-xs text-muted">Plain-English questions. Actions need your OK.</p>
         </div>
@@ -110,7 +110,7 @@ export function AskChase({
         ))}
         {busy && (
           <div className="flex items-center gap-2 text-sm text-muted">
-            <Spinner className="text-brand" /> Chase is checking your ledger…
+            <Spinner className="text-brand" /> Sorted is checking your ledger…
           </div>
         )}
         <div ref={endRef} />
@@ -130,7 +130,7 @@ export function AskChase({
             void ask(input);
           }}
         >
-          <input className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Who owes me what?" aria-label="Ask Chase" />
+          <input className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Who owes me what?" aria-label="Ask Sorted" />
           <button className="btn-primary px-3" disabled={busy || !input.trim()} aria-label="Send">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14M13 6l6 6-6 6" />

@@ -42,7 +42,7 @@ export interface LLM {
   chat(req: LLMRequest): Promise<LLMResponse>;
 }
 
-const TIMEOUT_MS = Number(process.env.CHASE_AI_TIMEOUT_MS || 25_000);
+const TIMEOUT_MS = Number(process.env.SORTED_AI_TIMEOUT_MS || 25_000);
 
 async function postJSON(url: string, headers: Record<string, string>, body: unknown): Promise<Record<string, unknown>> {
   const ctrl = new AbortController();
@@ -239,12 +239,12 @@ function safeParse(s: string, fallback: unknown = {}): Record<string, unknown> {
   }
 }
 
-export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Chase rules engine (no AI key)", ai: false };
+export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Sorted rules engine (no AI key)", ai: false };
 
-/** Pick the configured provider (CHASE_AI_PROVIDER overrides auto-detect). */
+/** Pick the configured provider (SORTED_AI_PROVIDER overrides auto-detect). */
 export function getLLM(): LLM | null {
-  if (process.env.CHASE_AI_DISABLED === "1") return null;
-  const pref = (process.env.CHASE_AI_PROVIDER || "").toLowerCase();
+  if (process.env.SORTED_AI_DISABLED === "1") return null;
+  const pref = (process.env.SORTED_AI_PROVIDER || "").toLowerCase();
   const order: (() => LLM | null)[] =
     pref === "openai" ? [openAI, gemini, anthropic] : pref === "anthropic" ? [anthropic, gemini, openAI] : [gemini, openAI, anthropic];
   for (const f of order) {

@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     .filter((m): m is ChatMessage => !!m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
   if (!messages.length || messages[messages.length - 1].role !== "user") {
-    return Response.json({ error: "Ask Chase a question." }, { status: 400 });
+    return Response.json({ error: "Ask Sorted a question." }, { status: 400 });
   }
   const settings = sanitizeSettings(body.settings);
   let ledger: Invoice[];

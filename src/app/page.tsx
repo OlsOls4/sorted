@@ -17,12 +17,12 @@ const STEPS = [
   },
   {
     k: "2",
-    h: "Chase writes the invoice",
+    h: "Sorted writes the invoice",
     p: "AI pulls out the customer, hours at your rate, parts and terms. You check it, tweak it, and send it through PayPal in one tap.",
   },
   {
     k: "3",
-    h: "Chase does the chasing",
+    h: "Sorted does the chasing",
     p: "Spots late payers, drafts a friendly nudge, then a firmer note, then a proper final notice — citing the Late Payment Act for business customers. You approve every send.",
   },
 ];
@@ -48,12 +48,12 @@ export default function Home() {
             For UK sole traders &amp; tradespeople
           </span>
           <h1 className="mt-4 text-4xl leading-[1.05] font-extrabold tracking-tight sm:text-6xl">
-            Finish the job.
+            Invoice sent, chased,
             <br />
-            <span className="text-brand">Chase gets you paid.</span>
+            <span className="text-brand">sorted.</span>
           </h1>
           <p className="mt-5 max-w-xl text-lg text-ink-2">
-            Turn scribbled job notes into a PayPal invoice in seconds. Chase keeps the ledger, spots who&apos;s late, and writes the awkward reminder emails for you, from a friendly nudge up to a
+            Turn scribbled job notes into a PayPal invoice in seconds. Sorted keeps the ledger, spots who&apos;s late, and writes the awkward reminder emails for you, from a friendly nudge up to a
             final notice.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
@@ -72,7 +72,7 @@ export default function Home() {
           <div className="card p-5">
             <div className="text-xs font-semibold text-muted uppercase">Job notes</div>
             <p className="mt-1 rounded-xl bg-paper p-3 font-mono text-sm">fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she&apos;s at patel.r@example.com</p>
-            <div className="my-3 text-center text-brand">✦ Chase ↓</div>
+            <div className="my-3 text-center text-brand">✦ Sorted ↓</div>
             <div className="rounded-xl border border-line p-3 text-sm">
               <div className="flex justify-between font-semibold">
                 <span>Mrs Patel</span>
@@ -148,20 +148,20 @@ export default function Home() {
             <ul className="mt-3 space-y-2 text-sm text-ink-2">
               <li>• Reads messy notes and voice dictation into structured invoices.</li>
               <li>• Writes reminders with the right tone, and only cites the Late Payment Act where it applies.</li>
-              <li>• “Ask Chase” answers questions like “who owes me what?” using tools over your ledger.</li>
+              <li>• “Ask Sorted” answers questions like “who owes me what?” using tools over your ledger.</li>
               <li>• Anything that contacts a customer needs your OK first. Works without an AI key too, using a built-in rules engine.</li>
             </ul>
           </div>
         </div>
         <div className="mt-10 text-center">
           <Link href="/app" className="btn-primary px-8 py-3 text-base">
-            Try Chase now: no sign-up
+            Try Sorted now: no sign-up
           </Link>
         </div>
       </section>
 
       <footer className="border-t border-line py-6 text-center text-xs text-muted">
-        Chase · built for the PayPal AI Hackathon · MIT licensed · Not legal advice: check the Late Payment rules for your situation.
+        Sorted · built for the PayPal AI Hackathon · MIT licensed · Not legal advice: check the Late Payment rules for your situation.
       </footer>
     </div>
   );

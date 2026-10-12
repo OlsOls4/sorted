@@ -1,4 +1,4 @@
-// "Ask Chase": an agent that answers questions over the ledger and proposes
+// "Ask Sorted": an agent that answers questions over the ledger and proposes
 // actions (create invoice, send reminder, mark paid). Actions that send
 // money-related comms are never executed here — they come back as a
 // PendingAction which the user must confirm in the UI.
@@ -64,7 +64,7 @@ export const TOOLS: ToolSpec[] = [
       properties: {
         invoice_id: { type: "string" },
         customer: { type: "string" },
-        stage: { type: "string", enum: ["nudge", "firm", "final"], description: "Omit to let Chase choose based on lateness" },
+        stage: { type: "string", enum: ["nudge", "firm", "final"], description: "Omit to let Sorted choose based on lateness" },
       },
     },
   },
@@ -208,7 +208,7 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
 
 function systemPrompt(ctx: AgentContext) {
   const today = todayISO();
-  return `You are Chase, a friendly, sharp money assistant for a UK sole trader: ${ctx.settings.traderName} of ${ctx.settings.businessName}.
+  return `You are the Sorted assistant, a friendly, sharp money assistant for a UK sole trader: ${ctx.settings.traderName} of ${ctx.settings.businessName}.
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
 Always use tools to get numbers — never guess figures. "Latest payer" means the customer who pays latest/slowest.
 For any action that sends something to a customer or changes an invoice (reminders, new invoices, marking paid) call the matching draft/propose tool; it will NOT happen until the user taps Confirm in the app, so tell them to review and confirm.

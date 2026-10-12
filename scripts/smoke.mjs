@@ -1,7 +1,7 @@
-// Smoke test against a running Chase server (demo mode).
+// Smoke test against a running Sorted server (demo mode).
 // Usage: node scripts/smoke.mjs [baseUrl]   (default http://localhost:3000)
 const B = process.argv[2] || "http://localhost:3000";
-const H = { "content-type": "application/json", "x-chase-mode": "demo" };
+const H = { "content-type": "application/json", "x-sorted-mode": "demo" };
 let failures = 0;
 const ok = (cond, msg) => {
   console.log(`${cond ? "✓" : "✗"} ${msg}`);

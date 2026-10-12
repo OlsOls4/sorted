@@ -5,11 +5,11 @@ import { seedInvoices } from "./seed";
 import { DEFAULT_SETTINGS, type Invoice, type Mode, type Settings } from "./types";
 
 const K = {
-  ledger: "chase.demo.ledger.v1",
-  settings: "chase.settings.v1",
-  mode: "chase.mode.v1",
-  liveReminders: "chase.live.reminders.v1",
-  paypalCreds: "chase.paypal.sandbox.v1",
+  ledger: "sorted.demo.ledger.v1",
+  settings: "sorted.settings.v1",
+  mode: "sorted.mode.v1",
+  liveReminders: "sorted.live.reminders.v1",
+  paypalCreds: "sorted.paypal.sandbox.v1",
 };
 
 export interface PayPalCreds {
@@ -77,7 +77,7 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, mode: Mode, body?: unknown, method?: "GET" | "POST", credsOverride?: PayPalCreds | null): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json", "x-chase-mode": mode };
+  const headers: Record<string, string> = { "Content-Type": "application/json", "x-sorted-mode": mode };
   // Sandbox creds pasted by the user travel per request (HTTPS) and are never stored server-side.
   const creds = credsOverride === undefined ? storage.loadPayPalCreds() : credsOverride;
   if (creds) {

@@ -111,7 +111,7 @@ export function JobNotes({
           <h2 id="newjob" className="text-base font-bold">
             Just finished a job?
           </h2>
-          <p className="text-sm text-muted">Type or say what you did — Chase writes the invoice.</p>
+          <p className="text-sm text-muted">Type or say what you did — Sorted writes the invoice.</p>
         </div>
       </div>
       <div className="relative">

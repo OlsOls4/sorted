@@ -21,7 +21,7 @@ import { StageBadge, StatusBadge } from "./ui";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-const chaseTheme = themeQuartz.withParams({
+const sortedTheme = themeQuartz.withParams({
   accentColor: "#0a7f5a",
   backgroundColor: "#ffffff",
   foregroundColor: "#0b1f33",
@@ -366,7 +366,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
             className="btn-ghost px-3 py-1.5 text-xs"
             onClick={() =>
               apiRef.current?.exportDataAsCsv({
-                fileName: `chase-ledger-${today}.csv`,
+                fileName: `sorted-ledger-${today}.csv`,
                 columnKeys: ["customerName", "number", "_display", "total", "_balance", "_overdue", "issueDate", "dueDate", "paidDate"],
               })
             }
@@ -377,7 +377,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
       </div>
       <div className="h-[520px] w-full">
         <AgGridReact<Row>
-          theme={chaseTheme}
+          theme={sortedTheme}
           rowData={rows}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}

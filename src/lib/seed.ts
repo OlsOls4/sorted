@@ -58,7 +58,7 @@ export function seedInvoices(rate = 45, today = todayISO()): Invoice[] {
     const id = `INV2-DEMO-${num}-${(i * 7919).toString(36).toUpperCase().padStart(4, "X")}`;
     return {
       id,
-      number: `CH-${num}`,
+      number: `INV-${num}`,
       status: r.status ?? (paid ? "PAID" : "SENT"),
       customerName: r.name,
       customerEmail: r.email,

@@ -51,7 +51,7 @@ function nextNumber(existing: Invoice[]): string {
     const n = parseInt(i.number.replace(/\D/g, ""), 10);
     return Number.isFinite(n) && n > m ? n : m;
   }, 1000);
-  return `CH-${String(max + 1).padStart(4, "0")}`;
+  return `INV-${String(max + 1).padStart(4, "0")}`;
 }
 
 class MockBackend implements InvoiceBackend {
@@ -179,18 +179,18 @@ export interface RequestContext {
 }
 
 function serverConfig(): PayPalConfig | null {
-  return process.env.CHASE_FORCE_DEMO === "1" ? null : paypalConfigFromEnv();
+  return process.env.SORTED_FORCE_DEMO === "1" ? null : paypalConfigFromEnv();
 }
 
 /**
  * Credential precedence: sandbox creds the user pasted in the browser (per request)
- * → server env vars → none (demo). The client can always force demo via x-chase-mode.
+ * → server env vars → none (demo). The client can always force demo via x-sorted-mode.
  */
 export function resolveContext(req: Request): RequestContext {
   const fromBrowser = paypalConfigFromHeaders(req);
   const cfg = fromBrowser ?? serverConfig();
   const credSource: CredSource = fromBrowser ? "browser" : cfg ? "server" : null;
-  const wanted = req.headers.get("x-chase-mode");
+  const wanted = req.headers.get("x-sorted-mode");
   const mode: Mode = wanted === "demo" || !cfg ? "demo" : "live";
   return { mode, cfg, credSource };
 }

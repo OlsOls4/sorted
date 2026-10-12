@@ -1,5 +1,5 @@
 {
-  "name": "chase",
+  "name": "sorted",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -30,7 +30,7 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "description": "Chase: an AI agent that turns UK tradespeople's job notes into PayPal invoices and chases late payers.",
+  "description": "Sorted: an AI agent that turns UK tradespeople's job notes into PayPal invoices and chases late payers.",
   "license": "MIT",
   "engines": {
     "node": ">=20"

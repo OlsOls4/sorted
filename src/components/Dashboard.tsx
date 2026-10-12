@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { gbp } from "@/lib/format";
 import { totals } from "@/lib/ledger";
 import type { EngineInfo, Invoice, InvoiceDraft, PendingAction, ReminderStage } from "@/lib/types";
-import { AskChase } from "./AskChase";
+import { AskSorted } from "./AskSorted";
 import { InvoiceEditor } from "./InvoiceEditor";
 import { JobNotes } from "./JobNotes";
 import { LedgerGrid } from "./LedgerGrid";
@@ -15,10 +15,10 @@ import { PayPalConnect } from "./PayPalConnect";
 import { ReminderModal } from "./ReminderModal";
 import { SettingsModal } from "./SettingsModal";
 import { EngineBadge, Modal, Spinner } from "./ui";
-import { useChase } from "./useChase";
+import { useSorted } from "./useSorted";
 
 export function Dashboard() {
-  const c = useChase();
+  const c = useSorted();
   const [editing, setEditing] = useState<{ draft: InvoiceDraft; engine?: EngineInfo; aiError?: string } | null>(null);
   const [reminding, setReminding] = useState<{ inv: Invoice; preset?: { stage: ReminderStage; subject: string; body: string } } | null>(null);
   const [confirmPaid, setConfirmPaid] = useState<Invoice | null>(null);
@@ -64,7 +64,7 @@ export function Dashboard() {
       <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
-            <Link href="/" aria-label="Chase home">
+            <Link href="/" aria-label="Sorted home">
               <Logo className="text-xl" />
             </Link>
             {c.mode === "demo" ? (
@@ -141,7 +141,7 @@ export function Dashboard() {
               </div>
               <div className="space-y-5">
                 <OverduePanel invoices={c.invoices} onChase={onRemind} />
-                <AskChase mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} />
+                <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} />
               </div>
             </div>
           </>

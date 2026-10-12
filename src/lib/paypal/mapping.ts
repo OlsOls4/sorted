@@ -1,4 +1,4 @@
-// Map between Chase's domain model and PayPal Invoicing v2 payloads.
+// Map between Sorted's domain model and PayPal Invoicing v2 payloads.
 
 import { computeTotals, round2 } from "../format";
 import { detectCustomerType } from "../parser";
@@ -21,7 +21,7 @@ export function draftToPayPal(draft: InvoiceDraft, settings: Settings, invoiceNu
       invoice_date: draft.issueDate,
       currency_code: "GBP",
       note: (draft.note || `Thank you for your business — ${settings.businessName}`).slice(0, 4000),
-      memo: `Created by Chase from job notes: ${draft.jobSummary}`.slice(0, 500),
+      memo: `Created by Sorted from job notes: ${draft.jobSummary}`.slice(0, 500),
       payment_term: { term_type: "DUE_ON_DATE_SPECIFIED", due_date: draft.dueDate },
     },
     invoicer: {
@@ -90,7 +90,7 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     customerName,
     customerEmail: email,
     customerType: bi?.business_name ? "business" : detectCustomerType(customerName, email),
-    jobSummary: (p.detail.memo?.replace(/^Created by Chase from job notes:\s*/, "") || items[0]?.description || "").slice(0, 120),
+    jobSummary: (p.detail.memo?.replace(/^Created by Sorted from job notes:\s*/, "") || items[0]?.description || "").slice(0, 120),
     items,
     vatEnabled,
     vatRate: vatPercent || 20,

@@ -1,6 +1,6 @@
 // PayPal Agent Toolkit integration (server-only).
 //
-// In live mode the Ask Chase agent's PayPal tools (list_invoices, get_invoice,
+// In live mode the Ask Sorted agent's PayPal tools (list_invoices, get_invoice,
 // send_invoice_reminder) are executed through @paypal/agent-toolkit's
 // AI-SDK tool objects, so the agent drives PayPal through PayPal's own
 // agent tool layer. Core invoice creation uses our direct REST client
