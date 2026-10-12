@@ -74,15 +74,26 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     unitAmount: Number(it.unit_amount?.value) || 0,
     unit: (it.unit_of_measure as LineItem["unit"]) || "QUANTITY",
   }));
+  const taxTotal = p.amount?.breakdown?.tax_total?.value;
   const vatPercent = Number(p.items?.find((it) => it.tax?.percent)?.tax?.percent ?? 0);
-  const vatEnabled = vatPercent > 0;
+  const vatEnabled = vatPercent > 0 || Number(taxTotal ?? 0) > 0;
   const calc = computeTotals({ items, vatEnabled, vatRate: vatPercent || 20 });
   const total = p.amount?.value ? Number(p.amount.value) : calc.total;
-  const paidAmt = Number(p.payments?.paid_amount?.value ?? 0);
+  // List/search summaries carry no items or breakdown: treat the total as the
+  // subtotal rather than reporting £0 net. (Backend hydrates details when it can.)
+  const summaryOnly = items.length === 0 && !p.amount?.breakdown;
+  const due = p.due_amount?.value !== undefined ? Number(p.due_amount.value) : undefined;
+  const paidAmt =
+    p.payments?.paid_amount?.value !== undefined
+      ? Number(p.payments.paid_amount.value)
+      : due !== undefined && Number.isFinite(due)
+        ? Math.max(0, round2(total - due))
+        : 0;
   const lastTx = p.payments?.transactions?.[p.payments.transactions.length - 1];
   const status = (KNOWN.includes(p.status as InvoiceStatus) ? p.status : "SENT") as InvoiceStatus;
   const host = sandbox ? "https://www.sandbox.paypal.com" : "https://www.paypal.com";
-  const issueDate = p.detail.invoice_date ?? p.detail.metadata?.create_time?.slice(0, 10) ?? "";
+  // metadata.create_time is a display string ("Tue 2026-10-13 12:26 AM BST"), not ISO.
+  const issueDate = p.detail.invoice_date ?? p.detail.metadata?.create_time?.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
   return {
     id: p.id,
     number: p.detail.invoice_number ?? p.id,
@@ -95,13 +106,17 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     vatEnabled,
     vatRate: vatPercent || 20,
     currency: "GBP",
-    subtotal: p.amount?.breakdown?.item_total?.value ? Number(p.amount.breakdown.item_total.value) : calc.subtotal,
-    vat: p.amount?.breakdown?.tax_total?.value ? Number(p.amount.breakdown.tax_total.value) : calc.vat,
+    subtotal: p.amount?.breakdown?.item_total?.value
+      ? Number(p.amount.breakdown.item_total.value)
+      : summaryOnly
+        ? total
+        : calc.subtotal,
+    vat: taxTotal ? Number(taxTotal) : summaryOnly ? 0 : calc.vat,
     total,
     amountPaid: status === "PAID" || status === "MARKED_AS_PAID" ? total : paidAmt,
     issueDate,
     dueDate: p.detail.payment_term?.due_date ?? issueDate,
-    paidDate: lastTx?.payment_date?.slice(0, 10),
+    paidDate: lastTx?.payment_date?.match(/\d{4}-\d{2}-\d{2}/)?.[0],
     payerViewUrl: p.detail.metadata?.recipient_view_url,
     merchantViewUrl: p.detail.metadata?.invoicer_view_url ?? `${host}/invoice/details/${p.id}`,
     reminders: [],

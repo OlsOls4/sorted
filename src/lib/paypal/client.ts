@@ -20,19 +20,32 @@ export interface PayPalConfig {
   clientId: string;
   clientSecret: string;
   baseUrl: string; // https://api-m.sandbox.paypal.com or https://api-m.paypal.com
+  /**
+   * Dev-only: send the OAuth token request with NO Authorization header so an
+   * egress proxy can inject Basic auth itself. Only ever set from server env
+   * (PAYPAL_AUTH_VIA_PROXY=1), never on Vercel, never for browser-pasted keys.
+   */
+  authViaProxy?: boolean;
+}
+
+export const SANDBOX_BASE = "https://api-m.sandbox.paypal.com";
+
+/** True only for local/dev runs that opt in; hard-disabled on Vercel. */
+export function authViaProxyEnabled(): boolean {
+  return process.env.PAYPAL_AUTH_VIA_PROXY === "1" && !process.env.VERCEL;
 }
 
 export function paypalConfigFromEnv(): PayPalConfig | null {
-  const clientId = process.env.PAYPAL_CLIENT_ID?.trim();
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET?.trim();
+  const viaProxy = authViaProxyEnabled();
+  const clientId = process.env.PAYPAL_CLIENT_ID?.trim() || (viaProxy ? "via-proxy" : "");
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET?.trim() || (viaProxy ? "via-proxy" : "");
   if (!clientId || !clientSecret) return null;
   const env = (process.env.PAYPAL_ENV || "sandbox").toLowerCase();
   const baseUrl =
     process.env.PAYPAL_API_BASE?.trim() || (env === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com");
-  return { clientId, clientSecret, baseUrl };
+  // The proxy path is sandbox-only.
+  return { clientId, clientSecret, baseUrl, ...(viaProxy && baseUrl === SANDBOX_BASE ? { authViaProxy: true } : {}) };
 }
-
-export const SANDBOX_BASE = "https://api-m.sandbox.paypal.com";
 
 /**
  * Credentials a user pasted into "Connect PayPal sandbox" (stored in their browser,
@@ -52,7 +65,7 @@ export function credKey(cfg: PayPalConfig): string {
   let h = 2166136261;
   const s = `${cfg.clientSecret}`;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  return `${cfg.baseUrl}|${cfg.clientId}|${(h >>> 0).toString(36)}`;
+  return `${cfg.baseUrl}|${cfg.clientId}|${(h >>> 0).toString(36)}${cfg.authViaProxy ? "|proxy" : ""}`;
 }
 
 export function isSandbox(cfg: PayPalConfig) {
@@ -78,14 +91,16 @@ export class PayPalClient {
     if (!force && hit && hit.expiresAt > Date.now() + 60_000) {
       return hit.token;
     }
-    const basic = Buffer.from(`${this.cfg.clientId}:${this.cfg.clientSecret}`).toString("base64");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    };
+    if (!(this.cfg.authViaProxy && authViaProxyEnabled())) {
+      headers.Authorization = `Basic ${Buffer.from(`${this.cfg.clientId}:${this.cfg.clientSecret}`).toString("base64")}`;
+    }
     const res = await fetch(`${this.cfg.baseUrl}/v1/oauth2/token`, {
       method: "POST",
-      headers: {
-        Authorization: `Basic ${basic}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-      },
+      headers,
       body: "grant_type=client_credentials",
       cache: "no-store",
     });
@@ -188,9 +203,10 @@ export class PayPalClient {
     }
   }
 
-  async createInvoice(payload: unknown): Promise<PayPalInvoice> {
+  async createInvoice(payload: unknown, requestId?: string): Promise<PayPalInvoice> {
     const { data } = await this.request<PayPalInvoice & { href?: string }>("POST", "/v2/invoicing/invoices", payload, {
       preferRepresentation: true,
+      requestId,
     });
     if (data && (data as PayPalInvoice).id) return data as PayPalInvoice;
     // Older behaviour: 201 with a link only
@@ -226,9 +242,47 @@ export class PayPalClient {
     });
   }
 
+  async cancelInvoice(id: string, opts: { subject?: string; note?: string; notify?: boolean } = {}) {
+    await this.request("POST", `/v2/invoicing/invoices/${encodeURIComponent(id)}/cancel`, {
+      ...(opts.subject ? { subject: opts.subject } : {}),
+      ...(opts.note ? { note: opts.note } : {}),
+      send_to_invoicer: false,
+      send_to_recipient: opts.notify ?? false,
+    });
+  }
+
+  /** Deletes a DRAFT (or cancelled) invoice. */
+  async deleteInvoice(id: string) {
+    await this.request("DELETE", `/v2/invoicing/invoices/${encodeURIComponent(id)}`);
+  }
+
   async getInvoice(id: string): Promise<PayPalInvoice> {
     const { data } = await this.request<PayPalInvoice>("GET", `/v2/invoicing/invoices/${encodeURIComponent(id)}`);
     return data;
+  }
+
+  /**
+   * PayPal's list endpoint returns only a summary (no items, tax breakdown or
+   * payment dates). Fetch full details for summaries that lack items, a few at
+   * a time, so VAT/subtotals and paid dates are right. Falls back to the summary
+   * for any invoice whose GET fails.
+   */
+  async hydrate(summaries: PayPalInvoice[], concurrency = 6, max = 150): Promise<PayPalInvoice[]> {
+    const out = summaries.slice();
+    const todo = out.map((p, i) => ({ p, i })).filter(({ p }) => !p.items?.length).slice(0, max);
+    let next = 0;
+    const worker = async () => {
+      while (next < todo.length) {
+        const { p, i } = todo[next++];
+        try {
+          out[i] = await this.getInvoice(p.id);
+        } catch {
+          /* keep summary */
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, todo.length) }, worker));
+    return out;
   }
 
   /** Lists all invoices (follows pagination up to `maxPages`). */
@@ -247,6 +301,13 @@ export class PayPalClient {
 }
 
 // ---- PayPal invoice shape (subset we use) ----
+/** True when PayPal rejected the request for a specific validation issue (e.g. DUPLICATE_INVOICE_NUMBER). */
+export function hasIssue(e: unknown, issue: string): boolean {
+  if (!(e instanceof PayPalError)) return false;
+  const d = e.details as { details?: { issue?: string }[] } | undefined;
+  return !!d?.details?.some((x) => x.issue === issue);
+}
+
 export interface PayPalMoney {
   currency_code: string;
   value: string;

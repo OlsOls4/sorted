@@ -1,7 +1,7 @@
 import { runAgent, type AgentContext } from "@/lib/ai/agent";
 import { asLedger, readJSON, sanitizeSettings } from "@/lib/api";
 import { errorResponse, getBackend, resolveContext } from "@/lib/backend";
-import { isSandbox, type PayPalInvoice } from "@/lib/paypal/client";
+import { PayPalClient, isSandbox, type PayPalInvoice } from "@/lib/paypal/client";
 import { payPalToInvoice } from "@/lib/paypal/mapping";
 import { runToolkitTool } from "@/lib/paypal/toolkit";
 import { seedInvoices } from "@/lib/seed";
@@ -29,7 +29,9 @@ export async function POST(req: Request) {
     try {
       // Live: read the ledger through PayPal's Agent Toolkit list_invoices tool.
       const res = (await runToolkitTool(cfg, "list_invoices", { page: 1, page_size: 100, total_required: true })) as { items?: PayPalInvoice[] };
-      ledger = (res.items ?? []).map((p) => payPalToInvoice(p, isSandbox(cfg)));
+      // The list summary has no line items / VAT breakdown, so fill in details.
+      const full = await new PayPalClient(cfg).hydrate(res.items ?? []);
+      ledger = full.map((p) => payPalToInvoice(p, isSandbox(cfg)));
       ledgerVia = "paypal-agent-toolkit";
     } catch (e) {
       preTrace.push({ tool: "agent_toolkit_fallback", args: {}, summary: (e as Error).message.slice(0, 160) });

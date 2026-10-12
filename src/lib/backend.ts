@@ -4,7 +4,7 @@
 
 import "server-only";
 import { computeTotals, isoTimestamp, round2, todayISO } from "./format";
-import { PayPalClient, PayPalError, isSandbox, paypalConfigFromEnv, paypalConfigFromHeaders, type PayPalConfig } from "./paypal/client";
+import { PayPalClient, PayPalError, hasIssue, isSandbox, paypalConfigFromEnv, paypalConfigFromHeaders, type PayPalConfig } from "./paypal/client";
 import { draftToPayPal, payPalToInvoice } from "./paypal/mapping";
 import { runToolkitTool } from "./paypal/toolkit";
 import { seedInvoices } from "./seed";
@@ -123,18 +123,33 @@ class PayPalBackend implements InvoiceBackend {
 
   async createAndSend(draft: InvoiceDraft, settings: Settings) {
     const number = await this.client.generateInvoiceNumber();
-    const payload = draftToPayPal(draft, settings, number);
-    const created = await this.client.createInvoice(payload);
-    await this.client.sendInvoice(created.id, {
-      subject: `Invoice ${created.detail.invoice_number ?? ""} from ${settings.businessName}`.trim(),
-      note: draft.note,
-    });
+    // One idempotency key per logical create, so a network retry can't double-create.
+    const requestId = crypto.randomUUID();
+    let created;
+    try {
+      created = await this.client.createInvoice(draftToPayPal(draft, settings, number), requestId);
+    } catch (e) {
+      // generate-next-invoice-number doesn't reserve the number; if another invoice
+      // grabbed it first, let PayPal auto-assign one instead.
+      if (!number || !hasIssue(e, "DUPLICATE_INVOICE_NUMBER")) throw e;
+      created = await this.client.createInvoice(draftToPayPal(draft, settings), crypto.randomUUID());
+    }
+    try {
+      await this.client.sendInvoice(created.id, {
+        subject: `Invoice ${created.detail.invoice_number ?? ""} from ${settings.businessName}`.trim(),
+        note: draft.note,
+      });
+    } catch (e) {
+      // Don't leave an orphan draft in the merchant's PayPal account.
+      await this.client.deleteInvoice(created.id).catch(() => undefined);
+      throw e;
+    }
     const fresh = await this.client.getInvoice(created.id).catch(() => created);
     return { data: payPalToInvoice(fresh, isSandbox(this.cfg)), via: "paypal-rest" as const };
   }
 
   async list() {
-    const items = await this.client.listInvoices();
+    const items = await this.client.hydrate(await this.client.listInvoices());
     return { data: items.map((p) => payPalToInvoice(p, isSandbox(this.cfg))), via: "paypal-rest" as const };
   }
 
@@ -145,10 +160,11 @@ class PayPalBackend implements InvoiceBackend {
     try {
       await runToolkitTool(this.cfg, "send_invoice_reminder", { invoice_id: id, subject, note });
     } catch (e) {
-      if (/unavailable/.test((e as Error).message)) {
-        via = "paypal-rest";
-        await this.client.remind(id, { subject, note });
-      } else throw e;
+      // Fall back to direct REST only when the toolkit never reached the reminder call
+      // (not loaded, or its own auth failed) — otherwise surface PayPal's error.
+      if (!isToolkitSetupError(e)) throw e;
+      via = "paypal-rest";
+      await this.client.remind(id, { subject, note });
     }
     const fresh = await this.client.getInvoice(id);
     const inv = payPalToInvoice(fresh, isSandbox(this.cfg));
@@ -166,6 +182,11 @@ class PayPalBackend implements InvoiceBackend {
     if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
     return { data: fresh, via: "paypal-rest" as const };
   }
+}
+
+function isToolkitSetupError(e: unknown): boolean {
+  if (e instanceof PayPalError && e.status === 401) return true;
+  return /unavailable|access token|invalid_client|Client Authentication failed/i.test((e as Error)?.message ?? "");
 }
 
 // ---------------- Mode resolution ----------------

@@ -1,5 +1,5 @@
 import { errorResponse, resolveContext } from "@/lib/backend";
-import { PayPalClient, isSandbox } from "@/lib/paypal/client";
+import { PayPalClient, PayPalError, isSandbox } from "@/lib/paypal/client";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,22 @@ export async function POST(req: Request) {
       invoiceCount: data?.total_items ?? data?.items?.length ?? 0,
     });
   } catch (e) {
+    const hint = connectHint(e);
+    if (hint && e instanceof PayPalError) {
+      return Response.json({ ok: false, error: e.message, hint, paypalDebugId: e.debugId, status: e.status }, { status: e.status });
+    }
     return errorResponse(e);
   }
+}
+
+/** Plain-English next step for the two failures people actually hit when connecting. */
+function connectHint(e: unknown): string | null {
+  if (!(e instanceof PayPalError)) return null;
+  if (e.status === 403) {
+    return "Your keys work, but this app doesn't have Invoicing enabled: developer.paypal.com → your sandbox app → Features → tick Invoicing → Save. Then try again.";
+  }
+  if (e.status === 401) {
+    return "PayPal didn't accept these keys. Check you copied the Client ID and Secret from the same app, and that they're Sandbox keys, not Live (developer.paypal.com → Apps & Credentials → Sandbox).";
+  }
+  return null;
 }

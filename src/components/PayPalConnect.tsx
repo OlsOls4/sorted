@@ -20,7 +20,7 @@ export function PayPalConnect({
   const [clientId, setClientId] = useState("");
   const [clientSecret, setClientSecret] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; hint?: string } | null>(null);
 
   async function connect() {
     setBusy(true);
@@ -29,7 +29,7 @@ export function PayPalConnect({
       await onConnect({ clientId: clientId.trim(), clientSecret: clientSecret.trim() });
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError({ message: (e as Error).message, hint: (e as { hint?: string }).hint });
     } finally {
       setBusy(false);
     }
@@ -85,7 +85,18 @@ export function PayPalConnect({
         <li>• Stored only in this browser&apos;s local storage and sent over HTTPS with each request. Sorted&apos;s server never saves or logs them.</li>
         <li>• Invoices go to sandbox emails. Use a sandbox personal account to pay them.</li>
       </ul>
-      {error && <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">Couldn&apos;t connect: {error}</div>}
+      {error && (
+        <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad" role="alert">
+          {error.hint ? (
+            <>
+              <p className="font-semibold">{error.hint}</p>
+              <p className="mt-1 break-words text-xs opacity-80">PayPal said: {error.message}</p>
+            </>
+          ) : (
+            <>Couldn&apos;t connect: {error.message}</>
+          )}
+        </div>
+      )}
       <div className="mt-5 flex justify-end gap-2">
         <button className="btn-ghost" onClick={onClose}>Cancel</button>
         <button className="btn-paypal" disabled={busy || !clientId.trim() || !clientSecret.trim()} onClick={connect}>

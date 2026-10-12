@@ -70,9 +70,11 @@ export const storage = {
 
 export class ApiError extends Error {
   debugId?: string;
-  constructor(msg: string, debugId?: string) {
+  hint?: string;
+  constructor(msg: string, debugId?: string, hint?: string) {
     super(msg);
     this.debugId = debugId;
+    this.hint = hint;
   }
 }
 
@@ -89,7 +91,7 @@ export async function api<T>(path: string, mode: Mode, body?: unknown, method?: 
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const data = (await res.json().catch(() => ({}))) as T & { error?: string; paypalDebugId?: string };
-  if (!res.ok) throw new ApiError(data.error ?? `Request failed (${res.status})`, data.paypalDebugId);
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string; paypalDebugId?: string; hint?: string };
+  if (!res.ok) throw new ApiError(data.error ?? `Request failed (${res.status})`, data.paypalDebugId, data.hint);
   return data;
 }
