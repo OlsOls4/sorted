@@ -1,5 +1,6 @@
 import { asLedger, readJSON, sanitizeSettings } from "@/lib/api";
 import { errorResponse, getBackend, resolveContext, validateDraft } from "@/lib/backend";
+import { liveWriteGuard } from "@/lib/guard";
 import type { InvoiceDraft } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function POST(req: Request) {
   if (!draft || typeof draft !== "object") return Response.json({ error: "Missing invoice draft." }, { status: 400 });
   const errors = validateDraft(draft);
   if (errors.length) return Response.json({ error: errors.join(" "), errors }, { status: 422 });
+  const blocked = liveWriteGuard(req, rc, [draft.customerEmail]);
+  if (blocked) return blocked;
   try {
     const { data, via } = await getBackend(rc).createAndSend(draft, sanitizeSettings(body.settings), asLedger(body.ledger));
     return Response.json({ mode, via, invoice: data });

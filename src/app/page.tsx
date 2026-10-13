@@ -64,7 +64,7 @@ export default function Home() {
               See how it works
             </a>
           </div>
-          <p className="mt-3 text-xs text-muted">No sign-up. The demo opens on a Bristol plumber&apos;s sample ledger with a mock PayPal, or paste your own PayPal sandbox keys to go live.</p>
+          <p className="mt-3 text-xs text-muted">No sign-up. Opens on a live PayPal sandbox when it&apos;s connected, otherwise on a Bristol plumber&apos;s sample ledger with a mock PayPal. You can also paste your own sandbox keys.</p>
         </div>
 
         <div className="relative">

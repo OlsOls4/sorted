@@ -101,7 +101,7 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     customerName,
     customerEmail: email,
     customerType: bi?.business_name ? "business" : detectCustomerType(customerName, email),
-    jobSummary: (p.detail.memo?.replace(/^Created by Sorted from job notes:\s*/, "") || items[0]?.description || "").slice(0, 120),
+    jobSummary: (p.detail.memo?.replace(/^Created by Sorted from job notes:\s*/, "").replace(/^\[Sorted demo(?::[a-z]+)?\]\s*/, "") || items[0]?.description || "").slice(0, 120),
     items,
     vatEnabled,
     vatRate: vatPercent || 20,

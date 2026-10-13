@@ -12,6 +12,8 @@ export interface Status {
   paypalEnv: "sandbox" | "live" | null;
   engine: EngineInfo;
   agentToolkit: string;
+  liveByDefault?: boolean;
+  sharedSandbox?: boolean;
 }
 
 export interface Toast {

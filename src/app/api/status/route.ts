@@ -14,6 +14,9 @@ export async function GET(req: Request) {
     paypalEnv: rc.cfg ? (isSandbox(rc.cfg) ? "sandbox" : "live") : null,
     engine: llm?.info ?? fallbackEngine(),
     aiProviders: aiStatus(),
+    // Live by default: when the server has its own sandbox keys, the app opens on real PayPal.
+    liveByDefault: serverLiveConfigured(),
+    sharedSandbox: rc.credSource === "server",
     agentToolkit: rc.cfg ? "enabled in live mode" : "inactive in demo mode",
   });
 }

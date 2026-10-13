@@ -72,8 +72,15 @@ export function Dashboard() {
                 Demo mode
               </span>
             ) : (
-              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-pp-2 uppercase ring-1 ring-sky-600/20">
-                PayPal {c.status?.paypalEnv ?? "live"}
+              <span
+                className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-pp-2 uppercase ring-1 ring-sky-600/20"
+                title={
+                  c.status?.sharedSandbox
+                    ? "Real PayPal sandbox API on Sorted's shared demo account. Invoices only go to @example.com test addresses."
+                    : "Real PayPal sandbox API with the keys you connected."
+                }
+              >
+                Live · PayPal {c.status?.paypalEnv ?? "sandbox"}
               </span>
             )}
           </div>
