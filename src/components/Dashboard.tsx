@@ -16,7 +16,7 @@ import { OverduePanel } from "./OverduePanel";
 import { PayPalConnect } from "./PayPalConnect";
 import { ReminderModal } from "./ReminderModal";
 import { SettingsModal } from "./SettingsModal";
-import { EngineBadge, Modal, Spinner } from "./ui";
+import { Modal, Spinner } from "./ui";
 import { useSorted } from "./useSorted";
 
 export function Dashboard() {
@@ -26,6 +26,15 @@ export function Dashboard() {
   const [confirmPaid, setConfirmPaid] = useState<Invoice | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
+  // The demo notice is a small dismissible pill (remembered for this browser session).
+  const [pillHidden, setPillHidden] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem("sorted.demoPill.hidden") === "1") requestAnimationFrame(() => setPillHidden(true));
+  }, []);
+  const hidePill = useCallback(() => {
+    sessionStorage.setItem("sorted.demoPill.hidden", "1");
+    setPillHidden(true);
+  }, []);
   const [paying, setPaying] = useState(false);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const viewing = viewingId ? (c.invoices.find((i) => i.id === viewingId) ?? null) : null;
@@ -85,9 +94,22 @@ export function Dashboard() {
               <Logo className="text-xl" />
             </Link>
             {c.mode === "demo" ? (
-              <span className="rounded-full bg-warn-soft px-2.5 py-1 text-[11px] font-bold tracking-wide text-warn uppercase ring-1 ring-warn/20" title="Mock PayPal backend with seeded data. Nothing is sent.">
-                Demo mode
-              </span>
+              pillHidden ? (
+                <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[10px] font-bold tracking-wide text-warn uppercase ring-1 ring-warn/20" title="Sample data · mock PayPal. Nothing is sent.">
+                  Demo
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-warn-soft py-0.5 pr-1 pl-2.5 text-[11px] font-medium text-warn ring-1 ring-warn/20" title="Mock PayPal backend with seeded data. Nothing is emailed.">
+                  <span className="hidden sm:inline">Sample data · mock PayPal ·</span>
+                  <span className="sm:hidden">Demo ·</span>
+                  <button type="button" className="font-semibold underline" onClick={() => setShowConnect(true)}>
+                    Connect sandbox
+                  </button>
+                  <button type="button" className="rounded-full px-1 leading-none hover:bg-warn/10" aria-label="Hide demo notice" onClick={hidePill}>
+                    ×
+                  </button>
+                </span>
+              )
             ) : (
               <span
                 className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-pp-2 uppercase ring-1 ring-sky-600/20"
@@ -102,9 +124,6 @@ export function Dashboard() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden sm:inline">
-              <EngineBadge engine={c.status?.engine} />
-            </span>
             {c.status?.liveAvailable ? (
               <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => c.setMode(c.mode === "demo" ? "live" : "demo")}>
                 {c.mode === "demo" ? "Go live" : "Use demo"}
@@ -133,15 +152,6 @@ export function Dashboard() {
             </button>
           </div>
         </div>
-        {c.mode === "demo" && (
-          <div className="border-t border-warn/20 bg-warn-soft/60 px-4 py-1.5 text-center text-xs text-warn">
-            You&apos;re exploring with sample data for <strong>{c.settings.businessName}</strong>. Invoices and reminders go to a mock PayPal — nothing is emailed.{" "}
-            <button className="font-semibold underline" onClick={() => setShowConnect(true)}>
-              Connect your PayPal sandbox
-            </button>{" "}
-            to go live.
-          </div>
-        )}
       </header>
 
       <main className="mx-auto max-w-7xl space-y-5 px-4 pt-5 2xl:max-w-[1440px]">
@@ -266,6 +276,7 @@ export function Dashboard() {
       {showSettings && (
         <SettingsModal
           settings={c.settings}
+          engine={c.status?.engine}
           onSave={(s) => {
             c.setSettings(s);
             toast("ok", "Settings saved.");

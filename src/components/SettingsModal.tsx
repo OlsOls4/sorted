@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { Settings } from "@/lib/types";
-import { Modal } from "./ui";
+import type { EngineInfo, Settings } from "@/lib/types";
+import { EngineBadge, Modal } from "./ui";
 
-export function SettingsModal({ settings, onSave, onClose }: { settings: Settings; onSave: (s: Settings) => void; onClose: () => void }) {
+export function SettingsModal({ settings, engine, onSave, onClose }: { settings: Settings; engine?: EngineInfo | null; onSave: (s: Settings) => void; onClose: () => void }) {
   const [s, setS] = useState(settings);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }));
   return (
     <Modal open onClose={onClose} title="Your business">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-paper px-3 py-2 text-xs text-muted">
+        <span>AI engine</span>
+        <EngineBadge engine={engine} />
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="bn">Business name</label>

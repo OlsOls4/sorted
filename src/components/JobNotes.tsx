@@ -125,7 +125,7 @@ export function JobNotes({
       <div className="relative">
         <textarea
           ref={textRef}
-          className="input min-h-[112px] resize-y pr-14 text-[15px] leading-relaxed"
+          className="input min-h-[160px] resize-y pr-14 text-base leading-relaxed"
           placeholder="e.g. fixed leaking stopcock for mrs okafor, 2.5 hrs, new valve 18 quid, call out 45, vat on top, ngozi.okafor@example.com"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -153,7 +153,7 @@ export function JobNotes({
       </div>
       {listening && <p className="mt-1.5 text-xs font-medium text-bad">Listening… speak naturally, tap the mic to stop.</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" className="btn-primary" onClick={submit} disabled={busy || !notes.trim()} title="Ctrl/⌘ + Enter">
+        <button type="button" className="btn-primary px-6 py-3 text-base shadow-md shadow-brand/20" onClick={submit} disabled={busy || !notes.trim()} title="Ctrl/⌘ + Enter">
           {busy ? <Spinner /> : <span aria-hidden>✦</span>}
           {busy ? "Reading your notes…" : "Draft invoice"}
         </button>
