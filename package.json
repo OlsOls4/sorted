@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "test": "node scripts/test-unit.mjs",
-    "seed:sandbox": "node scripts/seed-sandbox.mjs"
+    "seed:sandbox": "node scripts/seed-sandbox.mjs",
+    "webhook:register": "node scripts/register-webhook.mjs"
   },
   "dependencies": {
     "@paypal/agent-toolkit": "^1.11.0",

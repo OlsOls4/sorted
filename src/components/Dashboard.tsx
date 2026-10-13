@@ -146,7 +146,7 @@ export function Dashboard() {
               </div>
               {/* On desktop the chat fills the column's height without stretching the row. */}
               <div className="relative min-w-0 lg:min-h-[560px]">
-                <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} />
+                <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} events={c.events} />
               </div>
             </div>
 

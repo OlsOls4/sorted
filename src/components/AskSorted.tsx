@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client";
 import { gbp } from "@/lib/format";
+import type { PaymentEvent } from "@/lib/events";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, Settings, ToolTraceEntry } from "@/lib/types";
 import { EngineBadge, RichText, Spinner } from "./ui";
 
@@ -22,11 +23,13 @@ export function AskSorted({
   settings,
   invoices,
   onConfirm,
+  events = [],
 }: {
   mode: Mode;
   settings: Settings;
   invoices: Invoice[];
   onConfirm: (a: PendingAction) => Promise<boolean>;
+  events?: PaymentEvent[];
 }) {
   const [msgs, setMsgs] = useState<UIMsg[]>([
     {
@@ -37,6 +40,27 @@ export function AskSorted({
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Payment events (verified PayPal webhook, live sync, or the demo payer page) are reported in the chat.
+  const shownEvents = useRef(0);
+  useEffect(() => {
+    if (events.length <= shownEvents.current) return;
+    const fresh = events.slice(shownEvents.current);
+    shownEvents.current = events.length;
+    const src = (e: PaymentEvent) => (e.source === "paypal-webhook" ? "verified PayPal webhook" : e.source === "paypal-sync" ? "PayPal sync" : "mock PayPal");
+    // Deferred so React doesn't flag a synchronous setState inside the effect.
+    setTimeout(
+      () =>
+        setMsgs((m) => [
+          ...m,
+          ...fresh.map((e) => ({
+            role: "assistant" as const,
+            content: `${e.kind === "paid" ? "💷 **Payment in.**" : "**Invoice cancelled.**"} ${e.message} (via ${src(e)})`,
+          })),
+        ]),
+      0,
+    );
+  }, [events]);
 
   // Scroll the conversation itself (not the page) so the newest message stays in view.
   useEffect(() => {
