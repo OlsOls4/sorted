@@ -87,7 +87,7 @@ export function EngineBadge({ engine, compact = false }: { engine?: EngineInfo |
   if (!engine) return null;
   return (
     <span
-      title={engine.ai ? `Answered by ${engine.label}` : "No AI key configured or AI unavailable — deterministic rules engine answered"}
+      title={engine.ai ? `Answered by ${engine.label}` : `${engine.label}: deterministic rules answered`}
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
         engine.ai ? "bg-violet-50 text-violet-700" : "bg-slate-100 text-slate-600"
       }`}

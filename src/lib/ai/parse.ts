@@ -2,7 +2,7 @@ import "server-only";
 import { addDays, round2, todayISO, uid } from "../format";
 import { detectCustomerType, parseJobNotes } from "../parser";
 import type { EngineInfo, InvoiceDraft, LineItem, Settings } from "../types";
-import { RULES_ENGINE, extractJSON, getLLM } from "./provider";
+import { RULES_ENGINE, extractJSON, fallbackEngine, friendlyAIError, getLLM } from "./provider";
 
 const SYSTEM = `You turn a UK tradesperson's messy job notes into a structured invoice draft.
 Return ONLY a JSON object with keys:
@@ -10,7 +10,8 @@ customerName (string, keep titles like "Mrs"), customerEmail (string or ""), cus
 jobSummary (short British-English description of the work, sentence case, max 60 chars),
 items (array of {kind: "labour"|"parts"|"callout"|"other", description, quantity (number), unitAmount (number, GBP ex VAT), unit: "HOURS"|"QUANTITY"|"AMOUNT"}),
 vatMentioned (true if the notes say +VAT / plus VAT, else false), dueInDays (number or null), warnings (array of short strings for anything ambiguous).
-Rules: labour is hours x the hourly rate given unless notes state a different rate or a day rate; parts/materials are a single AMOUNT line unless itemised; never invent an email; never invent prices that aren't in the notes (except labour at the default rate); amounts are pounds.`;
+Rules: labour is hours x the hourly rate given unless notes state a different rate or a day rate; parts/materials are a single AMOUNT line unless itemised; never invent an email; never invent prices that aren't in the notes (except labour at the default rate); amounts are pounds ("18 quid" = 18, "1.2k" = 1200).
+A number after "call out"/"callout"/"call-out" is a callout line, never the hourly rate. "vat on top", "+ VAT", "plus vat", "ex VAT" all mean vatMentioned true; "no vat" means false. "pays in N days", "net N", "due in N days" set dueInDays.`;
 
 interface AIDraft {
   customerName?: string;
@@ -23,14 +24,24 @@ interface AIDraft {
   warnings?: string[];
 }
 
+// Identical notes + settings within 10 minutes reuse the last AI parse (saves free-tier calls).
+const CACHE_TTL_MS = 10 * 60_000;
+const gc = globalThis as unknown as { __sortedParseCache?: Map<string, { at: number; draft: InvoiceDraft; engine: EngineInfo }> };
+const parseCache = (gc.__sortedParseCache ??= new Map());
+const cacheKey = (notes: string, s: Settings, today: string) =>
+  JSON.stringify([notes.trim().replace(/\s+/g, " "), s.hourlyRate, s.vatRegistered, s.vatRate, s.paymentTermsDays, s.calloutFee, s.businessName, today]);
+
 export async function parseNotes(
   notes: string,
   settings: Settings,
-): Promise<{ draft: InvoiceDraft; engine: EngineInfo; aiError?: string }> {
+): Promise<{ draft: InvoiceDraft; engine: EngineInfo; aiError?: string; cached?: boolean }> {
   const today = todayISO();
   const heuristic = parseJobNotes(notes, settings, today).draft;
   const llm = getLLM();
   if (!llm) return { draft: heuristic, engine: RULES_ENGINE };
+  const key = cacheKey(notes, settings, today);
+  const hit = parseCache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return { draft: structuredClone(hit.draft), engine: hit.engine, cached: true };
   try {
     const res = await llm.chat({
       system: SYSTEM,
@@ -74,8 +85,10 @@ export async function parseNotes(
       note: `Thanks for choosing ${settings.businessName}. Payment due within ${term} days.`,
       warnings: [...new Set(warnings)].slice(0, 5),
     };
-    return { draft, engine: llm.info };
+    if (parseCache.size > 200) for (const [k, v] of parseCache) if (Date.now() - v.at > CACHE_TTL_MS || parseCache.size > 150) parseCache.delete(k);
+    parseCache.set(key, { at: Date.now(), draft: structuredClone(draft), engine: res.engine });
+    return { draft, engine: res.engine };
   } catch (e) {
-    return { draft: heuristic, engine: RULES_ENGINE, aiError: (e as Error).message };
+    return { draft: heuristic, engine: fallbackEngine(), aiError: friendlyAIError(e) };
   }
 }

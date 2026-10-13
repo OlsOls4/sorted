@@ -3,7 +3,7 @@ import { addDays, balance, daysOverdue, gbp, todayISO, ukDate } from "../format"
 import { STAGE_LABEL } from "../ledger";
 import { templateReminder } from "../reminders";
 import type { EngineInfo, Invoice, ReminderDraft, ReminderStage, Settings } from "../types";
-import { RULES_ENGINE, extractJSON, getLLM } from "./provider";
+import { RULES_ENGINE, extractJSON, fallbackEngine, friendlyAIError, getLLM } from "./provider";
 
 const SYSTEM = `You write payment reminder emails for a UK sole trader (tradesperson) to send to a customer about an unpaid PayPal invoice.
 British English, plain and human, no corporate fluff, no emojis. Keep it short (under 170 words).
@@ -54,8 +54,8 @@ export async function draftReminder(
     if (!out?.subject || !out?.body) throw new Error("model returned no usable JSON");
     // Guard rail: if the model mentions the Act for a consumer, fall back to the template.
     if (!si.applies && /Late Payment of Commercial Debts/i.test(out.body)) throw new Error("model cited Late Payment Act for a consumer");
-    return { draft: { ...base, subject: out.subject.slice(0, 200), body: out.body }, engine: llm.info };
+    return { draft: { ...base, subject: out.subject.slice(0, 200), body: out.body }, engine: res.engine };
   } catch (e) {
-    return { draft: base, engine: RULES_ENGINE, aiError: (e as Error).message };
+    return { draft: base, engine: fallbackEngine(), aiError: friendlyAIError(e) };
   }
 }

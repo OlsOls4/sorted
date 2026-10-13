@@ -41,8 +41,10 @@ The client retries 429 and 5xx responses with backoff (honouring `Retry-After`) 
 - **Note parsing** (`src/lib/ai/parse.ts`): an LLM returns structured JSON. Guard rails stop it inventing an email that isn't in the notes and fall back to the heuristic parser if the JSON doesn't make sense.
 - **Reminder writing** (`src/lib/ai/remind.ts`): the tone depends on the stage. The model only gets verified facts (amounts, dates, pay link, statutory interest). A guard rail rejects any draft that cites the Late Payment Act for a private customer.
 - **Ask Sorted agent** (`src/lib/ai/agent.ts`): a provider-agnostic tool-calling loop with these tools: `get_ledger_summary`, `list_invoices`, `get_earnings`, `rank_payers`, `draft_payment_reminder`, `create_invoice_draft`, `propose_mark_paid`. Any tool that would contact a customer or change an invoice returns a **pending action**. The UI shows it as a "Needs your OK" card, and the user has to confirm before anything is sent.
-- **Providers** (`src/lib/ai/provider.ts`): Google Gemini, OpenAI (or any OpenAI-compatible endpoint via `OPENAI_BASE_URL`), and Anthropic, all called with plain `fetch` and native tool calling. Sorted picks the first configured key, or the one named in `SORTED_AI_PROVIDER`.
-- **Deterministic fallback, always available**: a regex/heuristic job-notes parser, template reminders, and a rules-based agent that calls the same tools for the common questions. With no API key, every feature still works. Each answer shows which engine produced it ("✦ Google gemini-2.5-flash" or "⚙ Sorted rules engine").
+- **Providers** (`src/lib/ai/provider.ts`), free tiers first: **Groq** (`openai/gpt-oss-20b`, falling back to `qwen/qwen3.8-27b` on a 429), **NVIDIA NIM** (`nvidia/nemotron-3-super-120b-a12b`), **OpenRouter** (`nvidia/nemotron-3-super-120b-a12b:free`), then Google Gemini, OpenAI (or any OpenAI-compatible endpoint via `OPENAI_BASE_URL`) and Anthropic. Groq, NVIDIA, OpenRouter and OpenAI share one OpenAI-compatible chat-completions adapter with native tool calling; everything uses plain `fetch`. Every configured provider is tried in order and the next one is used on a 429, 5xx or timeout. A 429 parks that provider+model for a few minutes in memory, so requests stay fast while a free quota is exhausted. `SORTED_AI_PROVIDER` pins one provider.
+- **Frugal by design**: one LLM call per note parse (identical notes are cached for 10 minutes), reminder drafts are one call, and Ask Sorted runs at most 3 tool-loop rounds. Tools never make nested LLM calls, and when the agent proposes an action ("Needs your OK") it answers without a second model call.
+- **Deterministic fallback, always available**: a clause-based job-notes parser (handles "18 quid", "£1.2k", "call out 45", "vat on top" / "+ VAT" / "no vat", "x2", day rates, "net 30" / "pays in 14 days", Mr/Mrs/Ms names in any case, addresses), template reminders, and a rules-based agent that calls the same tools for the common questions. With no API key every feature still works. Each answer shows which engine produced it: "✦ Groq openai/gpt-oss-20b", "⚙ Sorted rules engine (no AI key)", or "⚙ Sorted rules engine (AI busy, fallback)" when a key exists but every provider is rate-limited or down.
+- **What is sent to AI providers**: the job notes you type (including any customer name/email in them), or for reminders and Ask Sorted, invoice facts from your ledger (customer names, amounts, dates). No PayPal credentials are ever sent. Free tiers of some providers may use prompts to improve their models; leave the AI keys unset to keep everything on the rules engine.
 
 ## Modes
 
@@ -62,7 +64,7 @@ npm run dev                  # http://localhost:3000
 ```
 
 ```bash
-npm run lint && npm run typecheck && npm run build
+npm run lint && npm run typecheck && npm test && npm run build
 npm start &                  # then, in another shell:
 npm run smoke -- http://localhost:3000   # end-to-end API smoke test (demo mode)
 ```
@@ -72,7 +74,7 @@ npm run smoke -- http://localhost:3000   # end-to-end API smoke test (demo mode)
 See [`.env.example`](.env.example). They are all optional:
 
 - `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV` (`sandbox` | `live`), `PAYPAL_API_BASE`, `SORTED_FORCE_DEMO`
-- `GEMINI_API_KEY` / `GEMINI_MODEL`, `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL`, `SORTED_AI_PROVIDER`, `SORTED_AI_TIMEOUT_MS`, `SORTED_AI_DISABLED`
+- `GROQ_API_KEY` / `GROQ_MODEL` / `GROQ_FALLBACK_MODEL`, `NVIDIA_API_KEY` / `NVIDIA_MODEL`, `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`, `GEMINI_API_KEY` / `GEMINI_MODEL`, `OPENAI_API_KEY` / `OPENAI_MODEL` / `OPENAI_BASE_URL`, `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL`, `SORTED_AI_PROVIDER`, `SORTED_AI_TIMEOUT_MS`, `SORTED_AI_BUDGET_MS`, `SORTED_AI_DISABLED`
 
 ### Deploy
 

@@ -22,6 +22,17 @@ ok(d?.items?.some((i) => i.unit === "HOURS" && i.quantity === 4 && i.unitAmount 
 ok(d?.items?.some((i) => i.kind === "parts" && i.unitAmount === 86), "parse: parts £86");
 ok(d?.vatEnabled === false, "parse: VAT off by default");
 
+const okafor = await post("/api/parse", {
+  notes: "fixed leaking stopcock for mrs okafor at 12 cotham hill, 2.5 hrs plus new valve 18 quid, call out 45, she pays in 14 days, vat on top, email ngozi.okafor@example.com",
+});
+const od = okafor.json.draft;
+ok(
+  od && /okafor/i.test(od.customerName) && od.items.some((i) => i.unitAmount === 18) && od.items.some((i) => i.kind === "callout" && i.unitAmount === 45) &&
+    od.items.some((i) => i.kind === "labour" && i.quantity === 2.5 && i.unitAmount === 45) && od.vatEnabled === true,
+  `parse okafor note (${okafor.json.engine?.label}${okafor.json.cached ? ", cached" : ""}): ${od?.items?.map((i) => `${i.kind} ${i.quantity}×£${i.unitAmount}`).join(", ")}, VAT ${od?.vatEnabled}`,
+);
+ok(!(status.engine?.ai === false && okafor.json.engine?.ai === false && /no AI key/.test(okafor.json.engine?.label) && status.aiProviders?.length), "engine label says 'no AI key' only when no key is configured");
+
 const list = await (await fetch(B + "/api/invoices", { headers: H })).json();
 ok(list.invoices?.length >= 15, `ledger: ${list.invoices?.length} seeded invoices (${list.via})`);
 

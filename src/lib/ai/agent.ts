@@ -10,7 +10,7 @@ import { parseJobNotes } from "../parser";
 import { templateReminder } from "../reminders";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, ReminderStage, Settings, ToolTraceEntry } from "../types";
 import { parseNotes } from "./parse";
-import { RULES_ENGINE, getLLM, type LLMMessage, type ToolSpec } from "./provider";
+import { RULES_ENGINE, fallbackEngine, friendlyAIError, getLLM, type LLMMessage, type LLMRouter, type ToolSpec } from "./provider";
 import { draftReminder } from "./remind";
 
 export interface AgentContext {
@@ -222,31 +222,48 @@ export async function runAgent(messages: ChatMessage[], ctx: AgentContext): Prom
       return await runLLMAgent(messages, ctx, llm);
     } catch (e) {
       const res = await runRulesAgent(messages, ctx);
-      res.toolTrace.unshift({ tool: "ai_unavailable", args: {}, summary: (e as Error).message.slice(0, 160) });
+      res.engine = fallbackEngine();
+      res.toolTrace.unshift({ tool: "ai_unavailable", args: {}, summary: friendlyAIError(e) });
       return res;
     }
   }
   return runRulesAgent(messages, ctx);
 }
 
-async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: NonNullable<ReturnType<typeof getLLM>>): Promise<ChatResponse> {
+// Keeps LLM calls to a minimum: tools never make nested LLM calls (notes are
+// parsed and reminders templated deterministically inside the loop), and when a
+// step produces a "Needs your OK" action we answer without a second model call.
+async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMRouter): Promise<ChatResponse> {
   const convo: LLMMessage[] = messages.slice(-12).map((m) => ({ role: m.role, content: m.content }));
   const trace: ToolTraceEntry[] = [];
   let pending: PendingAction | undefined;
-  for (let step = 0; step < 6; step++) {
+  let engine = llm.info ?? RULES_ENGINE;
+  for (let step = 0; step < 3; step++) {
     const res = await llm.chat({ system: systemPrompt(ctx), messages: convo, tools: TOOLS, maxTokens: 900 });
+    engine = res.engine;
     if (!res.toolCalls.length) {
-      return { reply: res.text.trim() || "Done.", engine: llm.info, toolTrace: trace, pendingAction: pending };
+      return { reply: res.text.trim() || "Done.", engine, toolTrace: trace, pendingAction: pending };
     }
     convo.push({ role: "assistant", content: res.text, toolCalls: res.toolCalls });
     for (const call of res.toolCalls) {
-      const out = await runTool(call.name, call.args, ctx, true);
+      const out = await runTool(call.name, call.args, ctx, false);
       trace.push(out.trace);
       if (out.pending) pending = out.pending;
       convo.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(out.result).slice(0, 12000) });
     }
+    if (pending) {
+      const lead = res.text.trim();
+      const what =
+        pending.type === "send_reminder"
+          ? `I've drafted the ${STAGE_LABEL[pending.stage].toLowerCase()} to ${pending.customerName} (${pending.invoiceNumber}).`
+          : pending.type === "create_invoice"
+            ? `I've drafted an invoice for ${pending.draft.customerName || "the customer"}.`
+            : `Ready to mark ${pending.invoiceNumber} (${pending.customerName}) as paid.`;
+      const reply = `${lead ? `${lead}\n\n` : ""}${what} Review it below and tap Confirm when you're happy. Nothing happens until you do.`;
+      return { reply, engine, toolTrace: trace, pendingAction: pending };
+    }
   }
-  return { reply: "I've gathered what I can — see the details above.", engine: llm.info, toolTrace: trace, pendingAction: pending };
+  return { reply: "I've gathered what I can — see the details above.", engine, toolTrace: trace, pendingAction: pending };
 }
 
 // ---------------- Deterministic rules agent ----------------

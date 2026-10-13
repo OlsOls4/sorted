@@ -1,7 +1,10 @@
 // Provider-agnostic LLM interface with tool calling. Server-only.
-// Supported: Google Gemini, OpenAI (or any OpenAI-compatible endpoint, e.g. Groq,
-// OpenRouter, Ollama via OPENAI_BASE_URL), Anthropic. If no key is configured,
-// getLLM() returns null and callers use the deterministic rules engine.
+// Free-tier friendly chain, tried in order: Groq -> NVIDIA NIM -> OpenRouter ->
+// Gemini -> OpenAI (or any OPENAI_BASE_URL) -> Anthropic. Groq, NVIDIA,
+// OpenRouter and OpenAI share one OpenAI-compatible adapter. A provider that
+// returns 429/5xx/times out is skipped (and remembered for a few minutes) and
+// the next one is tried. If no key is configured, getLLM() returns null and
+// callers use the deterministic rules engine.
 
 import "server-only";
 import type { EngineInfo } from "../types";
@@ -39,22 +42,52 @@ export interface LLMResponse {
 
 export interface LLM {
   info: EngineInfo;
+  /** Providers sharing a group (e.g. two Groq models) are skipped together on non-429 errors. */
+  group?: string;
   chat(req: LLMRequest): Promise<LLMResponse>;
 }
 
-const TIMEOUT_MS = Number(process.env.SORTED_AI_TIMEOUT_MS || 25_000);
+export class LLMError extends Error {
+  status: number; // HTTP status, 0 = network/timeout
+  retryAfterSec?: number;
+  provider?: string;
+  constructor(message: string, status: number, retryAfterSec?: number) {
+    super(message);
+    this.name = "LLMError";
+    this.status = status;
+    this.retryAfterSec = retryAfterSec;
+  }
+}
+
+const timeoutMs = () => Number(process.env.SORTED_AI_TIMEOUT_MS || 12_000);
+
+function parseRetryAfter(res: Response, data: Record<string, unknown>, text: string): number | undefined {
+  const h = res.headers.get("retry-after");
+  if (h && Number.isFinite(Number(h))) return Number(h);
+  // Gemini: details[].retryDelay "23s"; OpenAI-style messages: "try again in 1m30s" / "retry in 23.5s"
+  const m = text.match(/retry(?:Delay)?"?\s*[:=]?\s*"?(?:in\s*)?(\d+(?:\.\d+)?)s/i) || text.match(/try again in\s*(?:(\d+)m)?\s*(\d+(?:\.\d+)?)s/i);
+  if (m) return m.length > 2 ? Number(m[1] || 0) * 60 + Number(m[2]) : Number(m[1]);
+  void data;
+  return undefined;
+}
 
 async function postJSON(url: string, headers: Record<string, string>, body: unknown): Promise<Record<string, unknown>> {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs());
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...headers },
-      body: JSON.stringify(body),
-      signal: ctrl.signal,
-      cache: "no-store",
-    });
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+    } catch (e) {
+      const aborted = (e as Error).name === "AbortError" || ctrl.signal.aborted;
+      throw new LLMError(aborted ? `timed out after ${timeoutMs()}ms` : `network error: ${(e as Error).message}`, 0);
+    }
     const text = await res.text();
     let data: Record<string, unknown> = {};
     try {
@@ -63,8 +96,9 @@ async function postJSON(url: string, headers: Record<string, string>, body: unkn
       /* non-JSON */
     }
     if (!res.ok) {
-      const msg = (data.error as { message?: string })?.message ?? text.slice(0, 300);
-      throw new Error(`LLM HTTP ${res.status}: ${msg}`);
+      const err = data.error as { message?: string } | string | undefined;
+      const msg = (typeof err === "string" ? err : err?.message) ?? text.slice(0, 300);
+      throw new LLMError(`HTTP ${res.status}: ${String(msg).slice(0, 300)}`, res.status, parseRetryAfter(res, data, text));
     }
     return data;
   } finally {
@@ -72,14 +106,25 @@ async function postJSON(url: string, headers: Record<string, string>, body: unkn
   }
 }
 
-// ---------------- OpenAI-compatible ----------------
-function openAI(): LLM | null {
-  const key = process.env.OPENAI_API_KEY?.trim();
-  if (!key) return null;
-  const base = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+// ---------------- OpenAI-compatible (OpenAI, Groq, NVIDIA NIM, OpenRouter, any OPENAI_BASE_URL) ----------------
+export interface OpenAICompatConfig {
+  id: string; // provider id, e.g. "groq"
+  name: string; // display name, e.g. "Groq"
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  /** json_object response_format is sent only where the endpoint is known to accept it. */
+  jsonMode?: boolean;
+  extraHeaders?: Record<string, string>;
+  /** Extra body fields (e.g. reasoning effort for reasoning models). */
+  extraBody?: Record<string, unknown>;
+}
+
+export function openAICompatible(cfg: OpenAICompatConfig): LLM {
+  const base = cfg.baseUrl.replace(/\/$/, "");
   return {
-    info: { id: "openai", label: `OpenAI ${model}`, ai: true },
+    info: { id: cfg.id, label: `${cfg.name} ${cfg.model}`, ai: true },
+    group: cfg.id,
     async chat(req) {
       const messages: unknown[] = [{ role: "system", content: req.system }];
       for (const m of req.messages) {
@@ -94,33 +139,106 @@ function openAI(): LLM | null {
       }
       const data = await postJSON(
         `${base}/chat/completions`,
-        { Authorization: `Bearer ${key}` },
+        { Authorization: `Bearer ${cfg.apiKey}`, ...(cfg.extraHeaders ?? {}) },
         {
-          model,
+          model: cfg.model,
           messages,
           temperature: req.temperature ?? 0.2,
           max_tokens: req.maxTokens ?? 1200,
           ...(req.tools?.length
             ? { tools: req.tools.map((t) => ({ type: "function", function: t })), tool_choice: "auto" }
             : {}),
-          ...(req.json && !req.tools?.length ? { response_format: { type: "json_object" } } : {}),
+          ...(req.json && cfg.jsonMode && !req.tools?.length ? { response_format: { type: "json_object" } } : {}),
+          ...(cfg.extraBody ?? {}),
         },
       );
-      const msg = ((data.choices as { message?: Record<string, unknown> }[])?.[0]?.message ?? {}) as {
-        content?: string;
-        tool_calls?: { id: string; function: { name: string; arguments: string } }[];
+      const choice = (data.choices as { message?: Record<string, unknown> }[])?.[0];
+      if (!choice) throw new LLMError("no choices in response", 502);
+      const msg = (choice.message ?? {}) as {
+        content?: string | null;
+        tool_calls?: { id?: string; function: { name: string; arguments: string | Record<string, unknown> } }[];
       };
       return {
-        text: msg.content ?? "",
-        toolCalls: (msg.tool_calls ?? []).map((c) => ({ id: c.id, name: c.function.name, args: safeParse(c.function.arguments) })),
+        text: (msg.content ?? "").replace(/<think>[\s\S]*?<\/think>/gi, "").trim(),
+        toolCalls: (msg.tool_calls ?? []).map((c, i) => ({
+          id: c.id || `call_${Date.now()}_${i}`,
+          name: c.function.name,
+          args: typeof c.function.arguments === "string" ? safeParse(c.function.arguments) : (c.function.arguments ?? {}),
+        })),
       };
     },
   };
 }
 
+const env = (k: string) => process.env[k]?.trim() || "";
+
+// Groq free limits are per model per org, and Olly's other bot uses gpt-oss-120b
+// on the same org, so Sorted defaults to gpt-oss-20b and falls back to a second
+// Groq model on 429 before moving to the next provider.
+function groqModel(model: string): LLM {
+  return openAICompatible({
+    id: "groq",
+    name: "Groq",
+    baseUrl: "https://api.groq.com/openai/v1",
+    apiKey: env("GROQ_API_KEY"),
+    model,
+    jsonMode: true,
+    // gpt-oss is a reasoning model; low effort keeps latency and token use down.
+    extraBody: /gpt-oss/i.test(model) ? { reasoning_effort: "low" } : undefined,
+  });
+}
+
+function groqProviders(): LLM[] {
+  if (!env("GROQ_API_KEY")) return [];
+  const primary = env("GROQ_MODEL") || "openai/gpt-oss-20b";
+  const fallback = env("GROQ_FALLBACK_MODEL") || "qwen/qwen3.8-27b";
+  const models = fallback && fallback !== "none" && fallback !== primary ? [primary, fallback] : [primary];
+  return models.map(groqModel);
+}
+
+function nvidia(): LLM | null {
+  const key = env("NVIDIA_API_KEY");
+  if (!key) return null;
+  return openAICompatible({
+    id: "nvidia",
+    name: "NVIDIA",
+    baseUrl: "https://integrate.api.nvidia.com/v1",
+    apiKey: key,
+    model: env("NVIDIA_MODEL") || "nvidia/nemotron-3-super-120b-a12b",
+  });
+}
+
+function openRouter(): LLM | null {
+  const key = env("OPENROUTER_API_KEY");
+  if (!key) return null;
+  return openAICompatible({
+    id: "openrouter",
+    name: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    apiKey: key,
+    model: env("OPENROUTER_MODEL") || "nvidia/nemotron-3-super-120b-a12b:free",
+    extraHeaders: { "HTTP-Referer": "https://sorted-paypal.vercel.app", "X-Title": "Sorted" },
+    extraBody: { reasoning: { effort: "low", exclude: true } },
+  });
+}
+
+function openAI(): LLM | null {
+  const key = env("OPENAI_API_KEY");
+  if (!key) return null;
+  const baseUrl = env("OPENAI_BASE_URL") || "https://api.openai.com/v1";
+  return openAICompatible({
+    id: "openai",
+    name: /api\.openai\.com/.test(baseUrl) ? "OpenAI" : "OpenAI-compatible",
+    baseUrl,
+    apiKey: key,
+    model: env("OPENAI_MODEL") || "gpt-4o-mini",
+    jsonMode: /api\.openai\.com/.test(baseUrl),
+  });
+}
+
 // ---------------- Anthropic ----------------
 function anthropic(): LLM | null {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  const key = env("ANTHROPIC_API_KEY");
   if (!key) return null;
   const model = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
   return {
@@ -168,7 +286,7 @@ function anthropic(): LLM | null {
 function gemini(): LLM | null {
   const key = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY)?.trim();
   if (!key) return null;
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
   return {
     info: { id: "gemini", label: `Google ${model}`, ai: true },
     async chat(req) {
@@ -239,19 +357,157 @@ function safeParse(s: string, fallback: unknown = {}): Record<string, unknown> {
   }
 }
 
-export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Sorted rules engine (no AI key)", ai: false };
+// ---------------- Provider chain with per-provider cooldowns ----------------
 
-/** Pick the configured provider (SORTED_AI_PROVIDER overrides auto-detect). */
-export function getLLM(): LLM | null {
-  if (process.env.SORTED_AI_DISABLED === "1") return null;
-  const pref = (process.env.SORTED_AI_PROVIDER || "").toLowerCase();
-  const order: (() => LLM | null)[] =
-    pref === "openai" ? [openAI, gemini, anthropic] : pref === "anthropic" ? [anthropic, gemini, openAI] : [gemini, openAI, anthropic];
-  for (const f of order) {
-    const llm = f();
-    if (llm) return llm;
+export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Sorted rules engine (no AI key)", ai: false };
+export const RULES_ENGINE_BUSY: EngineInfo = { id: "rules", label: "Sorted rules engine (AI busy, fallback)", ai: false };
+
+const one = (f: () => LLM | null) => () => {
+  const l = f();
+  return l ? [l] : [];
+};
+const FACTORIES: Record<string, () => LLM[]> = {
+  groq: groqProviders,
+  nvidia: one(nvidia),
+  openrouter: one(openRouter),
+  gemini: one(gemini),
+  openai: one(openAI),
+  anthropic: one(anthropic),
+};
+const ORDER = ["groq", "nvidia", "openrouter", "gemini", "openai", "anthropic"];
+
+/** Configured providers in fallback order. SORTED_AI_PROVIDER pins exactly one. */
+export function configuredProviders(): LLM[] {
+  if (process.env.SORTED_AI_DISABLED === "1") return [];
+  const pin = env("SORTED_AI_PROVIDER").toLowerCase();
+  const ids = pin && FACTORIES[pin] ? [pin] : ORDER;
+  return ids.flatMap((id) => FACTORIES[id]());
+}
+
+// Cooldowns live in module memory (per server instance). Good enough to stop
+// hammering a provider whose free quota is exhausted.
+type Cooldown = { until: number; reason: string };
+const g = globalThis as unknown as { __sortedAICooldowns?: Map<string, Cooldown> };
+const cooldowns: Map<string, Cooldown> = (g.__sortedAICooldowns ??= new Map());
+
+export function cooldownMs(err: LLMError): number {
+  const s = err.status;
+  if (s === 429) {
+    const ra = err.retryAfterSec;
+    // Short per-minute limits: honour Retry-After (min 30s). Daily quota: park it for 5 min.
+    if (ra !== undefined && ra <= 120) return Math.max(30, ra) * 1000;
+    return 5 * 60_000;
   }
-  return null;
+  if (s === 401 || s === 403 || s === 404) return 10 * 60_000; // bad key / model gone: don't retry every request
+  if (s === 400 && /api[ _-]?key/i.test(err.message)) return 10 * 60_000; // Gemini reports bad keys as 400
+  if (s === 0 || s >= 500) return 60_000; // timeout / outage
+  return 0; // 400 etc: probably request-specific
+}
+
+export function providerCoolingUntil(id: string, now = Date.now()): number | null {
+  const c = cooldowns.get(id);
+  if (!c) return null;
+  if (c.until <= now) {
+    cooldowns.delete(id);
+    return null;
+  }
+  return c.until;
+}
+
+export function resetCooldowns() {
+  cooldowns.clear();
+}
+
+/** Thrown when every configured provider failed or is cooling down. */
+export class AIUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AIUnavailableError";
+  }
+}
+
+export interface RoutedResponse extends LLMResponse {
+  engine: EngineInfo;
+}
+
+export interface LLMRouter {
+  providers: LLM[];
+  /** The provider that would be tried first right now (null if all are cooling down). */
+  info: EngineInfo | null;
+  chat(req: LLMRequest): Promise<RoutedResponse>;
+}
+
+const TOTAL_BUDGET_MS = () => Number(process.env.SORTED_AI_BUDGET_MS || 25_000);
+
+/**
+ * The configured providers as one router: tries each in order, skipping any in
+ * cooldown, falling through on 429/5xx/timeout (and other errors). One HTTP call
+ * per provider attempt, no internal retries. Returns null when no key is set.
+ */
+export function getLLM(): LLMRouter | null {
+  const providers = configuredProviders();
+  if (!providers.length) return null;
+  return {
+    providers,
+    get info() {
+      return providers.find((p) => !providerCoolingUntil(p.info.label))?.info ?? null;
+    },
+    async chat(req) {
+      const started = Date.now();
+      const errors: string[] = [];
+      const deadGroups = new Set<string>();
+      for (const p of providers) {
+        const key = p.info.label; // per provider + model
+        if (p.group && deadGroups.has(p.group)) continue;
+        if (providerCoolingUntil(key)) {
+          if (p.group && cooldowns.get(key)?.reason !== "rate limited") deadGroups.add(p.group);
+          errors.push(`${key}: cooling down (${cooldowns.get(key)?.reason})`);
+          continue;
+        }
+        if (Date.now() - started > TOTAL_BUDGET_MS()) {
+          errors.push(`${key}: skipped (time budget spent)`);
+          break;
+        }
+        try {
+          const res = await p.chat(req);
+          return { ...res, engine: p.info };
+        } catch (e) {
+          const err = e instanceof LLMError ? e : new LLMError((e as Error).message, 0);
+          const ms = cooldownMs(err);
+          if (ms > 0) cooldowns.set(key, { until: Date.now() + ms, reason: err.status === 429 ? "rate limited" : err.status ? `HTTP ${err.status}` : "timeout" });
+          // Only a 429 (per-model quota) is worth trying a sibling model on the same provider.
+          if (err.status !== 429 && p.group) deadGroups.add(p.group);
+          errors.push(`${key}: ${err.message.slice(0, 120)}`);
+        }
+      }
+      throw new AIUnavailableError(errors.join(" | "));
+    },
+  };
+}
+
+/** Engine label for a rules-engine answer: "no AI key" only when no key is configured. */
+export function fallbackEngine(): EngineInfo {
+  return configuredProviders().length ? RULES_ENGINE_BUSY : RULES_ENGINE;
+}
+
+/** Short, user-facing reason the AI wasn't used. */
+export function friendlyAIError(e: unknown): string {
+  const m = (e as Error)?.message ?? String(e);
+  if (/rate limited|HTTP 429|quota/i.test(m)) return "AI provider busy (rate limit/quota), used the rules engine";
+  if (/timed out|timeout/i.test(m)) return "AI provider timed out, used the rules engine";
+  if (/HTTP 5\d\d/.test(m)) return "AI provider error, used the rules engine";
+  if (/HTTP 40[134]/.test(m)) return "AI provider rejected the key or model, used the rules engine";
+  return "AI answer unusable, used the rules engine";
+}
+
+/** Status for /api/status: which providers are configured and which are cooling. */
+export function aiStatus() {
+  const providers = configuredProviders();
+  const now = Date.now();
+  return providers.map((p) => {
+    const until = providerCoolingUntil(p.info.label, now);
+    return { id: p.info.id, label: p.info.label, coolingDownForSec: until ? Math.round((until - now) / 1000) : 0 };
+  });
 }
 
 /** Extract the first JSON object from model text (handles ```json fences). */
