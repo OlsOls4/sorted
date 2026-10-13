@@ -28,6 +28,21 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Visible keyboard focus everywhere (mouse clicks don't trigger it). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @utility card {
   @apply rounded-2xl border border-line bg-white shadow-[0_1px_2px_rgba(16,24,40,0.05)];
 }

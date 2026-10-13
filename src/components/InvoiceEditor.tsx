@@ -32,7 +32,23 @@ export function InvoiceEditor({
     setD((p) => ({ ...p, items: [...p.items, { id: uid("li_"), kind: "other", description: "", quantity: 1, unitAmount: 0, unit: "AMOUNT" }] }));
 
   const emailOK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.customerEmail);
-  const canSend = d.customerName.trim() && emailOK && d.items.length > 0 && t.total > 0 && d.items.every((li) => li.quantity > 0);
+  const dueOK = /^\d{4}-\d{2}-\d{2}$/.test(d.dueDate);
+  const blocker = !d.customerName.trim()
+    ? "Add the customer's name."
+    : !emailOK
+      ? "Add a valid email so PayPal can send the invoice."
+      : d.items.length === 0
+        ? "Add at least one line."
+        : d.items.some((li) => !li.description.trim())
+          ? "Give every line a description."
+          : d.items.some((li) => li.quantity <= 0)
+            ? "Every line needs a quantity above zero."
+            : t.total <= 0
+              ? "The total must be more than £0."
+              : !dueOK
+                ? "Pick a due date."
+                : null;
+  const canSend = !blocker;
 
   async function send() {
     setSending(true);
@@ -84,14 +100,14 @@ export function InvoiceEditor({
         </div>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="js">Job</label>
-          <input id="js" className="input" value={d.jobSummary} onChange={(e) => set("jobSummary", e.target.value)} />
+          <input id="js" className="input" value={d.jobSummary} onChange={(e) => set("jobSummary", e.target.value)} placeholder="What you did, e.g. Fixed leaking stopcock" />
         </div>
       </div>
 
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
           <span className="label mb-0">Line items</span>
-          <button className="text-sm font-semibold text-brand hover:underline" onClick={addItem}>
+          <button type="button" className="text-sm font-semibold text-brand hover:underline" onClick={addItem}>
             + Add line
           </button>
         </div>
@@ -113,7 +129,7 @@ export function InvoiceEditor({
                   min={0}
                   step={li.unit === "HOURS" ? 0.25 : 1}
                   value={li.quantity}
-                  onChange={(e) => setItem(li.id, { quantity: Number(e.target.value) })}
+                  onChange={(e) => setItem(li.id, { quantity: Math.max(0, Number(e.target.value) || 0) })}
                   aria-label={li.unit === "HOURS" ? "Hours" : "Quantity"}
                 />
               </div>
@@ -127,13 +143,13 @@ export function InvoiceEditor({
                     min={0}
                     step={0.01}
                     value={li.unitAmount}
-                    onChange={(e) => setItem(li.id, { unitAmount: Number(e.target.value) })}
+                    onChange={(e) => setItem(li.id, { unitAmount: Math.max(0, Number(e.target.value) || 0) })}
                     aria-label="Unit price"
                   />
                 </div>
               </div>
               <div className="col-span-3 text-right text-sm font-semibold sm:col-span-1">{gbp(lineTotal(li))}</div>
-              <button className="col-span-1 text-muted hover:text-bad" onClick={() => removeItem(li.id)} aria-label="Remove line">
+              <button type="button" className="col-span-1 rounded-md py-1 text-muted hover:text-bad" onClick={() => removeItem(li.id)} aria-label={`Remove ${li.description || "line"}`} title="Remove line">
                 ✕
               </button>
               <div className="col-span-12 -mt-1 pl-1 text-[11px] text-muted">
@@ -155,7 +171,9 @@ export function InvoiceEditor({
             {(["consumer", "business"] as const).map((ct) => (
               <button
                 key={ct}
-                className={`flex-1 rounded-lg px-2 py-1.5 font-medium ${d.customerType === ct ? "bg-ink text-white" : "text-muted"}`}
+                type="button"
+                aria-pressed={d.customerType === ct}
+                className={`flex-1 rounded-lg px-2 py-1.5 font-medium ${d.customerType === ct ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
                 onClick={() => set("customerType", ct)}
               >
                 {ct === "consumer" ? "Private" : "Business"}
@@ -181,14 +199,19 @@ export function InvoiceEditor({
         <div className="flex justify-between"><span className="text-muted">Subtotal</span><span>{gbp(t.subtotal)}</span></div>
         {d.vatEnabled && <div className="flex justify-between"><span className="text-muted">VAT ({d.vatRate}%)</span><span>{gbp(t.vat)}</span></div>}
         <div className="mt-1 flex justify-between border-t border-line pt-2 text-lg font-extrabold"><span>Total</span><span>{gbp(t.total)}</span></div>
-        {!d.vatEnabled && <p className="mt-1 text-xs text-muted">No VAT charged — not VAT registered.</p>}
+        {!d.vatEnabled && <p className="mt-1 text-xs text-muted">No VAT charged. Tick &ldquo;Add VAT&rdquo; above if you&apos;re VAT registered.</p>}
       </div>
 
-      {error && <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">{error}</div>}
+      {error && (
+        <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad" role="alert">
+          {error}
+        </div>
+      )}
 
-      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button className="btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn-paypal" disabled={!canSend || sending} onClick={send}>
+      <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+        {blocker && <span className="text-xs text-muted sm:mr-auto">{blocker}</span>}
+        <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+        <button type="button" className="btn-paypal" disabled={!canSend || sending} onClick={send}>
           {sending ? <Spinner /> : <PayPalMark />}
           {sending ? "Sending…" : `Send ${gbp(t.total)} invoice via PayPal${mode === "demo" ? " (demo)" : ""}`}
         </button>

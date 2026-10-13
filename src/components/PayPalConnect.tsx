@@ -44,6 +44,7 @@ export function PayPalConnect({
           </span>
           {credSource === "browser" && (
             <button
+              type="button"
               className="text-xs font-semibold underline"
               onClick={async () => {
                 await onDisconnect();
@@ -62,7 +63,14 @@ export function PayPalConnect({
         </a>
         , then paste its Client ID and Secret.
       </p>
-      <div className="mt-4 space-y-3">
+      <form
+        id="pp-form"
+        className="mt-4 space-y-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && clientId.trim() && clientSecret.trim()) void connect();
+        }}
+      >
         <div>
           <label className="label" htmlFor="pp-id">Client ID</label>
           <input id="pp-id" className="input font-mono text-xs" autoComplete="off" spellCheck={false} value={clientId} onChange={(e) => setClientId(e.target.value)} />
@@ -79,7 +87,7 @@ export function PayPalConnect({
             onChange={(e) => setClientSecret(e.target.value)}
           />
         </div>
-      </div>
+      </form>
       <ul className="mt-3 space-y-1 text-xs text-muted">
         <li>• Sandbox only: Sorted pins these keys to api-m.sandbox.paypal.com, so no real money can move.</li>
         <li>• Stored only in this browser&apos;s local storage and sent over HTTPS with each request. Sorted&apos;s server never saves or logs them.</li>
@@ -98,8 +106,8 @@ export function PayPalConnect({
         </div>
       )}
       <div className="mt-5 flex justify-end gap-2">
-        <button className="btn-ghost" onClick={onClose}>Cancel</button>
-        <button className="btn-paypal" disabled={busy || !clientId.trim() || !clientSecret.trim()} onClick={connect}>
+        <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+        <button type="submit" form="pp-form" className="btn-paypal" disabled={busy || !clientId.trim() || !clientSecret.trim()}>
           {busy ? <Spinner /> : <PayPalMark />} {busy ? "Checking…" : "Test & connect"}
         </button>
       </div>
