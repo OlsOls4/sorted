@@ -17,6 +17,7 @@ execFileSync(
     "--strict", "--skipLibCheck", "--esModuleInterop", "--rootDir", path.join(root, "src"),
     path.join(root, "src/lib/parser.ts"),
     path.join(root, "src/lib/ai/provider.ts"),
+    path.join(root, "src/lib/ai/parse.ts"),
     path.join(root, "src/lib/markdown.ts"),
     path.join(root, "src/lib/paypal/mapping.ts"),
     path.join(root, "src/lib/paypal/client.ts"),
@@ -155,6 +156,37 @@ const CASES = [
     check(has(d, "labour", 4, 55), "4h at £55");
     check(d.items.some((i) => i.unitAmount === 140) && d.items.some((i) => i.unitAmount === 90), "both parts");
     check(d.vatEnabled && d.warnings.some((w) => /includes VAT/.test(w)), "inc vat warns");
+  }],
+  // Bare number straight after an item name is money ("chemicals 35", "EICR cert 60").
+  ["power flushed system for the Coopers, 6 hours, chemicals 35, magnaclean filter 120, mark.cooper@btinternet.com", (d) => {
+    check(has(d, "labour", 6, 45), "6h labour");
+    check(d.items.some((i) => i.unitAmount === 35 && /chemicals/i.test(i.description)), "chemicals 35 is £35");
+    check(d.items.some((i) => i.unitAmount === 120 && /filter/i.test(i.description)), "filter 120 is £120");
+    check(sum(d) === 425, `total 425 (got ${sum(d)})`);
+  }],
+  ["Mr & Mrs Lewis, 14 Redland Grove. New consumer unit fitted, CU and breakers £210, 7 hrs labour, EICR cert 60, lewisfamily@gmail.com", (d) => {
+    check(d.items.some((i) => i.unitAmount === 60 && /EICR/i.test(i.description)), "EICR cert 60 is £60");
+    check(sum(d) === 210 + 7 * 45 + 60, `total ${sum(d)}`);
+  }],
+  // "6 boards @ 14.50" is one line: quantity 6 at £14.50 (not a £6 part plus £14.50).
+  ["decking repair for Kingswood Builders Ltd, 5 hrs, 6 boards @ 14.50, screws 12, plus vat, accounts@kingswoodbuilders.co.uk", (d) => {
+    check(d.items.some((i) => i.quantity === 6 && i.unitAmount === 14.5 && /boards/i.test(i.description)), "6 x £14.50 boards");
+    check(!d.items.some((i) => i.unitAmount === 6), "no stray £6 line");
+    check(has(d, "labour", 5, 45), "5h labour");
+    check(d.items.some((i) => i.unitAmount === 12 && /screws/i.test(i.description)), "screws 12");
+    check(Math.abs(sum(d) - (225 + 87 + 12)) < 1e-9, `subtotal 324 (got ${sum(d)})`);
+    check(d.vatEnabled === true, "plus vat");
+  }],
+  ["landlord EICR for Avon Properties, 3 flats at 120 each, accounts@avonproperties.co.uk, net 30", (d) => {
+    check(d.items.some((i) => i.quantity === 3 && i.unitAmount === 120) && sum(d) === 360, "3 flats at 120 each → 3 x £120");
+  }],
+  // "£1,350" keeps its thousands separator (clauses split on commas must not make it £1 + £350).
+  ["new combi installed Mrs Ogunleye, worcester boiler £1,350, flue kit 95, 2 days at 280/day, ogunleye.f@yahoo.co.uk", (d) => {
+    check(d.items.some((i) => i.unitAmount === 1350 && /boiler/i.test(i.description)), "boiler £1,350");
+    check(!d.items.some((i) => i.unitAmount === 1 || i.unitAmount === 350), "not split into £1 and £350");
+  }],
+  ["rewire for Mr Jones, materials £2,450.50, jones@example.com", (d) => {
+    check(d.items.some((i) => i.unitAmount === 2450.5), "£2,450.50");
   }],
 ];
 
@@ -578,6 +610,26 @@ await step("Reminders: pay link, Pay in 3 (private, £20–£3,000), B2B waiver"
   check(/Late Payment of Commercial Debts/.test(fin.body) && /pay the invoice in full today .* waive the statutory interest/.test(fin.body), "B2B final: Act + pay-today waiver");
   check(!/Pay in 3/.test(fin.body), "no Pay in 3 for business");
   check(!/waive/.test(REM.templateReminder(inv, S, "final", TODAY).body), "no waiver for private customers");
+});
+
+await step("parse.ts: notes that mention VAT override the AI's/settings' VAT decision", async () => {
+  const PARSE = require(path.join(out, "lib/ai/parse.js"));
+  setEnv({ GROQ_API_KEY: "gk" });
+  const aiReply = (vatMentioned) => () => respond(200, { choices: [{ message: { role: "assistant", content: JSON.stringify({
+    customerName: "Mr Price", customerEmail: "", customerType: "consumer", jobSummary: "Replaced tap",
+    items: [{ kind: "labour", description: "Labour", quantity: 2, unitAmount: 50, unit: "HOURS" }], vatMentioned, dueInDays: null, warnings: [] }) } }] });
+  const REG = { ...S, hourlyRate: 50, vatRegistered: true };
+  script = { "api.groq.com": aiReply(false) };
+  const a = await PARSE.parseNotes("replaced tap for mr price, 2 hrs, cash job no vat", REG);
+  check(a.engine.ai === true, `AI answered (${a.engine.label})`);
+  check(a.draft.vatEnabled === false, "VAT-registered trader + 'no vat' in notes → no VAT");
+  script = { "api.groq.com": aiReply(false) };
+  const b = await PARSE.parseNotes("replaced tap for mr price, 2 hrs", REG);
+  check(b.draft.vatEnabled === true, "no VAT mention → registered trader's default (VAT on)");
+  script = { "api.groq.com": aiReply(false) };
+  const c = await PARSE.parseNotes("replaced tap for mr price, 2 hrs, plus vat", { ...REG, vatRegistered: false });
+  check(c.draft.vatEnabled === true, "'plus vat' in notes wins even when the AI says vatMentioned=false");
+  setEnv({});
 });
 
 console.log(`\n${passes} checks passed, ${failures} failed`);

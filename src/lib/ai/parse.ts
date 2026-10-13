@@ -1,6 +1,6 @@
 import "server-only";
 import { addDays, round2, todayISO, uid } from "../format";
-import { detectCustomerType, parseJobNotes } from "../parser";
+import { detectCustomerType, mentionsVat, noteAmounts, parseJobNotes } from "../parser";
 import type { EngineInfo, InvoiceDraft, LineItem, Settings } from "../types";
 import { RULES_ENGINE, extractJSON, fallbackEngine, friendlyAIError, getLLM } from "./provider";
 
@@ -98,6 +98,19 @@ export async function parseNotes(
     const term = typeof ai.dueInDays === "number" && ai.dueInDays >= 0 && ai.dueInDays < 366 ? ai.dueInDays : settings.paymentTermsDays;
     const warnings = [...(ai.warnings ?? []).map(String)];
     if (!email) warnings.push("No email address found — PayPal needs one to send the invoice.");
+    // Flag any £ amount in the notes that the AI draft doesn't account for (a line's unit price,
+    // line total, or the labour rate), e.g. a short "screws 12" the model dropped.
+    const finalItems = items.length ? items : heuristic.items;
+    const covered = new Set<number>();
+    for (const li of finalItems) {
+      covered.add(round2(li.unitAmount));
+      covered.add(round2(li.unitAmount * li.quantity));
+    }
+    covered.add(round2(settings.hourlyRate));
+    const missing = noteAmounts(heuristic).filter((a) => !covered.has(a));
+    if (missing.length) {
+      warnings.unshift(`Check the lines: ${missing.map((a) => `£${a.toFixed(2)}`).join(", ")} in your notes ${missing.length === 1 ? "isn't" : "aren't"} on this draft.`);
+    }
     const draft: InvoiceDraft = {
       ...heuristic,
       customerName: name,
@@ -105,7 +118,8 @@ export async function parseNotes(
       customerType: ai.customerType === "business" || ai.customerType === "consumer" ? ai.customerType : detectCustomerType(name, email),
       jobSummary: cleanSummary(ai.jobSummary, name, heuristic.jobSummary).slice(0, 90),
       items: items.length ? items : heuristic.items,
-      vatEnabled: settings.vatRegistered || !!ai.vatMentioned,
+      // When the notes talk about VAT ("no vat", "+ VAT"), the rules engine's reading wins over the default.
+      vatEnabled: mentionsVat(notes) ? heuristic.vatEnabled : settings.vatRegistered || !!ai.vatMentioned,
       dueDate: addDays(today, term),
       note: `Thanks for choosing ${settings.businessName}. Payment due within ${term} days.`,
       warnings: [...new Set(warnings)].slice(0, 5),

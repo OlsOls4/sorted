@@ -7,15 +7,15 @@
   "summary": {
     "n": 50,
     "customer": 45,
-    "lineCount": 34,
-    "amounts": 22,
+    "lineCount": 46,
+    "amounts": 39,
     "vat": 50,
-    "subtotal": 22,
-    "total": 22,
+    "subtotal": 39,
+    "total": 39,
     "customerType": 48,
-    "linesMatched": 73,
+    "linesMatched": 98,
     "linesExpected": 109,
-    "allCorrect": 18
+    "allCorrect": 35
   },
   "modelOnlySummary": null,
   "rows": [
@@ -302,13 +302,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mark Cooper",
         "items": [
@@ -317,12 +317,24 @@
             "description": "Labour — Power flushed system for the Coopers",
             "quantity": 6,
             "unitAmount": 45
+          },
+          {
+            "kind": "parts",
+            "description": "Chemicals",
+            "quantity": 1,
+            "unitAmount": 35
+          },
+          {
+            "kind": "parts",
+            "description": "Magnaclean filter",
+            "quantity": 1,
+            "unitAmount": 120
           }
         ],
         "vatEnabled": false,
-        "subtotal": 270,
+        "subtotal": 425,
         "vat": 0,
-        "total": 270
+        "total": 425
       }
     },
     {
@@ -413,13 +425,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 2,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr & Mrs Lewis",
         "items": [
@@ -434,12 +446,18 @@
             "description": "CU and breakers",
             "quantity": 1,
             "unitAmount": 210
+          },
+          {
+            "kind": "parts",
+            "description": "EICR cert",
+            "quantity": 1,
+            "unitAmount": 60
           }
         ],
         "vatEnabled": true,
-        "subtotal": 560,
-        "vat": 112,
-        "total": 672
+        "subtotal": 620,
+        "vat": 124,
+        "total": 744
       }
     },
     {
@@ -452,13 +470,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Jo Bloggs",
         "items": [
@@ -467,12 +485,18 @@
             "description": "Labour — Added 2 double sockets in kitchen",
             "quantity": 3.5,
             "unitAmount": 50
+          },
+          {
+            "kind": "parts",
+            "description": "Cable and sockets",
+            "quantity": 1,
+            "unitAmount": 38
           }
         ],
         "vatEnabled": true,
-        "subtotal": 175,
-        "vat": 35,
-        "total": 210
+        "subtotal": 213,
+        "vat": 42.6,
+        "total": 255.6
       }
     },
     {
@@ -531,33 +555,27 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 0,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 1,
       "linesExpected": 1,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Avon Properties",
         "items": [
           {
-            "kind": "parts",
+            "kind": "other",
             "description": "Flats",
-            "quantity": 1,
-            "unitAmount": 3
-          },
-          {
-            "kind": "parts",
-            "description": "Flats",
-            "quantity": 1,
+            "quantity": 3,
             "unitAmount": 120
           }
         ],
         "vatEnabled": true,
-        "subtotal": 123,
-        "vat": 24.6,
-        "total": 147.6
+        "subtotal": 360,
+        "vat": 72,
+        "total": 432
       }
     },
     {
@@ -570,13 +588,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 2,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mrs Khan",
         "items": [
@@ -591,12 +609,18 @@
             "description": "Light",
             "quantity": 1,
             "unitAmount": 45
+          },
+          {
+            "kind": "parts",
+            "description": "Sundries",
+            "quantity": 1,
+            "unitAmount": 10
           }
         ],
         "vatEnabled": true,
-        "subtotal": 145,
-        "vat": 29,
-        "total": 174
+        "subtotal": 155,
+        "vat": 31,
+        "total": 186
       }
     },
     {
@@ -666,7 +690,7 @@
             "unitAmount": 50
           },
           {
-            "kind": "parts",
+            "kind": "other",
             "description": "Lamps",
             "quantity": 6,
             "unitAmount": 8
@@ -688,13 +712,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mrs Bell",
         "items": [
@@ -703,12 +727,24 @@
             "description": "Labour — Hung 3 internal doors (1 day)",
             "quantity": 1,
             "unitAmount": 220
+          },
+          {
+            "kind": "parts",
+            "description": "Doors and hinges",
+            "quantity": 1,
+            "unitAmount": 285
+          },
+          {
+            "kind": "parts",
+            "description": "Door furniture",
+            "quantity": 1,
+            "unitAmount": 54
           }
         ],
         "vatEnabled": false,
-        "subtotal": 220,
+        "subtotal": 559,
         "vat": 0,
-        "total": 220
+        "total": 559
       }
     },
     {
@@ -840,12 +876,12 @@
       "customer": true,
       "customerType": true,
       "lineCount": true,
-      "amounts": false,
-      "linesMatched": 1,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Kingswood Builders Ltd",
         "items": [
@@ -856,22 +892,22 @@
             "unitAmount": 40
           },
           {
-            "kind": "parts",
+            "kind": "other",
             "description": "Boards",
-            "quantity": 1,
-            "unitAmount": 6
+            "quantity": 6,
+            "unitAmount": 14.5
           },
           {
             "kind": "parts",
-            "description": "Boards",
+            "description": "Screws",
             "quantity": 1,
-            "unitAmount": 14.5
+            "unitAmount": 12
           }
         ],
         "vatEnabled": true,
-        "subtotal": 220.5,
-        "vat": 44.1,
-        "total": 264.6
+        "subtotal": 299,
+        "vat": 59.8,
+        "total": 358.8
       }
     },
     {
@@ -993,13 +1029,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": false,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Hartley & Sons",
         "items": [
@@ -1008,12 +1044,18 @@
             "description": "Labour — Office clean",
             "quantity": 4,
             "unitAmount": 20
+          },
+          {
+            "kind": "parts",
+            "description": "Carpet machine hire",
+            "quantity": 1,
+            "unitAmount": 35
           }
         ],
         "vatEnabled": false,
-        "subtotal": 80,
+        "subtotal": 115,
         "vat": 0,
-        "total": 80
+        "total": 115
       }
     },
     {
@@ -1027,32 +1069,32 @@
       "customer": true,
       "customerType": true,
       "lineCount": true,
-      "amounts": false,
-      "linesMatched": 0,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr Green",
         "items": [
           {
-            "kind": "parts",
-            "description": "Carpet clean rooms a room",
-            "quantity": 1,
-            "unitAmount": 3
+            "kind": "other",
+            "description": "Rooms",
+            "quantity": 3,
+            "unitAmount": 40
           },
           {
             "kind": "parts",
-            "description": "Carpet clean rooms a room",
+            "description": "Stairs",
             "quantity": 1,
-            "unitAmount": 40
+            "unitAmount": 25
           }
         ],
         "vatEnabled": false,
-        "subtotal": 43,
+        "subtotal": 145,
         "vat": 0,
-        "total": 43
+        "total": 145
       }
     },
     {
@@ -1104,13 +1146,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 2,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr Barker",
         "items": [
@@ -1125,12 +1167,18 @@
             "description": "Tip",
             "quantity": 1,
             "unitAmount": 30
+          },
+          {
+            "kind": "parts",
+            "description": "Petrol",
+            "quantity": 1,
+            "unitAmount": 8
           }
         ],
         "vatEnabled": false,
-        "subtotal": 142.5,
+        "subtotal": 150.5,
         "vat": 0,
-        "total": 142.5
+        "total": 150.5
       }
     },
     {
@@ -1144,12 +1192,12 @@
       "customer": true,
       "customerType": true,
       "lineCount": true,
-      "amounts": false,
-      "linesMatched": 1,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "St Mary's Primary School",
         "items": [
@@ -1160,22 +1208,22 @@
             "unitAmount": 25
           },
           {
-            "kind": "parts",
+            "kind": "other",
             "description": "Panels",
-            "quantity": 1,
-            "unitAmount": 3
+            "quantity": 3,
+            "unitAmount": 32
           },
           {
-            "kind": "parts",
-            "description": "Panels",
-            "quantity": 1,
-            "unitAmount": 32
+            "kind": "other",
+            "description": "Posts",
+            "quantity": 4,
+            "unitAmount": 15
           }
         ],
         "vatEnabled": false,
-        "subtotal": 185,
+        "subtotal": 306,
         "vat": 0,
-        "total": 185
+        "total": 306
       }
     },
     {
@@ -1263,9 +1311,9 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": true,
+      "lineCount": false,
       "amounts": false,
-      "linesMatched": 1,
+      "linesMatched": 2,
       "linesExpected": 3,
       "vat": true,
       "subtotal": false,
@@ -1290,12 +1338,18 @@
             "description": "Paint tins dulux",
             "quantity": 1,
             "unitAmount": 42
+          },
+          {
+            "kind": "parts",
+            "description": "Sundries",
+            "quantity": 1,
+            "unitAmount": 15
           }
         ],
         "vatEnabled": false,
-        "subtotal": 585,
+        "subtotal": 600,
         "vat": 0,
-        "total": 585
+        "total": 600
       }
     },
     {
@@ -1308,9 +1362,9 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
+      "lineCount": true,
       "amounts": false,
-      "linesMatched": 0,
+      "linesMatched": 1,
       "linesExpected": 2,
       "vat": true,
       "subtotal": false,
@@ -1323,12 +1377,18 @@
             "description": "Labour — Wallpapered feature wall",
             "quantity": 0.5,
             "unitAmount": 30
+          },
+          {
+            "kind": "parts",
+            "description": "Paste",
+            "quantity": 1,
+            "unitAmount": 11
           }
         ],
         "vatEnabled": false,
-        "subtotal": 15,
+        "subtotal": 26,
         "vat": 0,
-        "total": 15
+        "total": 26
       }
     },
     {
@@ -1415,13 +1475,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr and Mrs Kowalski",
         "items": [
@@ -1430,12 +1490,24 @@
             "description": "Labour — Exterior painting (4 days)",
             "quantity": 4,
             "unitAmount": 190
+          },
+          {
+            "kind": "parts",
+            "description": "Scaffold tower hire",
+            "quantity": 1,
+            "unitAmount": 120
+          },
+          {
+            "kind": "other",
+            "description": "Masonry paint",
+            "quantity": 6,
+            "unitAmount": 38
           }
         ],
         "vatEnabled": false,
-        "subtotal": 760,
+        "subtotal": 1108,
         "vat": 0,
-        "total": 760
+        "total": 1108
       }
     },
     {
@@ -1449,13 +1521,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 2,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr Wright",
         "items": [
@@ -1466,6 +1538,12 @@
             "unitAmount": 40
           },
           {
+            "kind": "other",
+            "description": "Tiles",
+            "quantity": 8,
+            "unitAmount": 4.5
+          },
+          {
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -1473,9 +1551,9 @@
           }
         ],
         "vatEnabled": true,
-        "subtotal": 170,
-        "vat": 34,
-        "total": 204
+        "subtotal": 206,
+        "vat": 41.2,
+        "total": 247.2
       }
     },
     {
@@ -1687,12 +1765,12 @@
       "customer": true,
       "customerType": true,
       "lineCount": true,
-      "amounts": false,
-      "linesMatched": 2,
+      "amounts": true,
+      "linesMatched": 3,
       "linesExpected": 3,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mrs Ogunleye",
         "items": [
@@ -1706,7 +1784,7 @@
             "kind": "parts",
             "description": "Worcester boiler",
             "quantity": 1,
-            "unitAmount": 1
+            "unitAmount": 1350
           },
           {
             "kind": "parts",
@@ -1716,9 +1794,9 @@
           }
         ],
         "vatEnabled": true,
-        "subtotal": 656,
-        "vat": 131.2,
-        "total": 787.2
+        "subtotal": 2005,
+        "vat": 401,
+        "total": 2406
       }
     },
     {
@@ -1730,13 +1808,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Hannah",
         "items": [
@@ -1745,12 +1823,18 @@
             "description": "Labour — Tiled bathroom floor",
             "quantity": 6,
             "unitAmount": 35
+          },
+          {
+            "kind": "parts",
+            "description": "Adhesive and grout",
+            "quantity": 1,
+            "unitAmount": 28
           }
         ],
         "vatEnabled": false,
-        "subtotal": 210,
+        "subtotal": 238,
         "vat": 0,
-        "total": 210
+        "total": 238
       }
     },
     {
@@ -1764,20 +1848,20 @@
       "customer": true,
       "customerType": true,
       "lineCount": true,
-      "amounts": false,
-      "linesMatched": 1,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mr Dobson",
         "items": [
           {
-            "kind": "parts",
-            "description": "Splashback in kitchen sq m m",
-            "quantity": 1,
-            "unitAmount": 2.5
+            "kind": "other",
+            "description": "Sq m",
+            "quantity": 2.5,
+            "unitAmount": 45
           },
           {
             "kind": "parts",
@@ -1787,9 +1871,9 @@
           }
         ],
         "vatEnabled": false,
-        "subtotal": 18.5,
+        "subtotal": 128.5,
         "vat": 0,
-        "total": 18.5
+        "total": 128.5
       }
     },
     {
@@ -1881,13 +1965,13 @@
       "engine": "Sorted rules engine (no AI key)",
       "customer": true,
       "customerType": true,
-      "lineCount": false,
-      "amounts": false,
-      "linesMatched": 1,
+      "lineCount": true,
+      "amounts": true,
+      "linesMatched": 2,
       "linesExpected": 2,
       "vat": true,
-      "subtotal": false,
-      "total": false,
+      "subtotal": true,
+      "total": true,
       "got": {
         "customerName": "Mrs O'Brien",
         "items": [
@@ -1896,12 +1980,18 @@
             "description": "Labour — Bits n bobs",
             "quantity": 3,
             "unitAmount": 35
+          },
+          {
+            "kind": "parts",
+            "description": "Sealant n rawlplugs",
+            "quantity": 1,
+            "unitAmount": 9.6
           }
         ],
         "vatEnabled": false,
-        "subtotal": 105,
+        "subtotal": 114.6,
         "vat": 0,
-        "total": 105
+        "total": 114.6
       }
     },
     {

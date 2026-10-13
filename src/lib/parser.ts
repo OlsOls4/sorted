@@ -176,6 +176,16 @@ const cleanDesc = (s: string) =>
 
 const sentence = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
+/** True when the notes say anything about VAT ("no vat", "+ VAT", "inc vat"...). */
+export function mentionsVat(notes: string): boolean {
+  return /\bvat\b|\bzero[- ]rated\b|\bno\s+tax\b/i.test(notes);
+}
+
+/** The money amounts the rules engine read from the notes (unit prices), for cross-checking an AI draft. */
+export function noteAmounts(d: InvoiceDraft): number[] {
+  return [...new Set(d.items.filter((li) => li.unitAmount > 0).map((li) => round2(li.unitAmount)))];
+}
+
 export interface ParseResult {
   draft: InvoiceDraft;
   confidence: number; // 0..1
@@ -195,14 +205,17 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
     .replace(/\b(\d+)\s+and\s+a\s+half\b/gi, (_m, n: string) => String(Number(n) + 0.5))
     .replace(/\b(?:an|one)\s+(?:hour|hr)\s+and\s+a\s+half\b/gi, "1.5 hrs")
     .replace(/\b(?:a\s+)?couple\s+of\s+(?=hours?|hrs?|days?)/gi, "2 ")
-    .replace(/(\d)\s?(?:quid|pound)s?\s?(\d{2})\b/gi, "$1.$2 quid"); // "12 quid 50" -> 12.50
+    .replace(/(\d)\s?(?:quid|pound)s?\s?(\d{2})\b/gi, "$1.$2 quid") // "12 quid 50" -> 12.50
+    .replace(/\b(\d{1,3})((?:,\d{3})+)(?!\d|,\d)/g, (_m, a: string, b: string) => a + b.replace(/,/g, "")); // "£1,350" -> "£1350" before clauses split on commas
 
   // --- Customer + address (found on the whole text, then blanked out)
   const cust = extractCustomer(text, email);
   const customerName = cust.name;
   const nameRaw = cust.raw || (customerName && new RegExp(String.raw`\b${escapeRe(customerName)}\b`, "i").test(text) ? customerName : "");
   if (nameRaw) text = text.replace(new RegExp(escapeRe(nameRaw) + String.raw`(?:['’]s)?`, "i"), " § ");
-  const addrM = text.match(ADDRESS_RE);
+  let addrM = text.match(ADDRESS_RE);
+  // "@ 45 per sq m" is a unit price, not "45 Per Square".
+  if (addrM && addrM.index !== undefined && (/\bper\b/i.test(addrM[0]) || /(?:@|\bx)\s*(?:£\s?)?$/i.test(text.slice(0, addrM.index)))) addrM = null;
   let address = "";
   if (addrM) {
     address = titleCase(addrM[0].replace(/[,.]$/, "")).replace(POSTCODE_RE, (p) => p.toUpperCase());
@@ -314,6 +327,39 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
 
   for (const clause0 of rawClauses) {
     let clause = ` ${clause0} `;
+
+    // "6 boards @ 14.50", "3 flats at 120 each", "3 rooms @ 40 a room", "4 certs at 65 each",
+    // "posts 4 x 15", "tiles 8 x 4.50", "6 x £8": one line, quantity N at the unit price.
+    const qtyPrice: RegExp[] = [
+      new RegExp(String.raw`\b(\d{1,4}(?:\.\d{1,2})?)\s*(?:x\s*)?((?:[a-z][a-z'’.]*\s+){0,2}[a-z][a-z'’.]*)\s*(?:@|\bat\b)\s*(?:£\s?)?(${N})\s*(?:quid|pounds?)?(?:\s*(?:each|ea|per\s+[a-z]+|an?\s+[a-z]+|/\s?[a-z]+))?`, "i"),
+      new RegExp(String.raw`\b((?:[a-z][a-z'’.]*\s+){0,2}[a-z][a-z'’.]*)\s+(\d{1,4})\s?x\s?(?:£\s?)?(${N})\b(?!\s*(?:mm|cm|m\b|ft|hrs?|hours?|days?))`, "i"),
+      new RegExp(String.raw`(?:^|\s)(\d{1,4})\s?x\s?£\s?(${N})\s*((?:[a-z][a-z'’.]*\s*){0,3})`, "i"),
+    ];
+    const TIME_UNIT = /^(?:hrs?|hours?|h|days?|mins?|minutes?|weeks?|of us|men|lads|blokes|people)$/i;
+    for (let guard = 0; guard < 4; guard++) {
+      let hit: { qty: number; thing: string; unit: number; text: string } | null = null;
+      const m0 = clause.match(qtyPrice[0]);
+      if (m0 && !TIME_UNIT.test(m0[2].trim()) && !/(?:\/|per|an?|p\/?)\s*(?:hr|hour|h|day)\b/i.test(m0[0].slice(m0[0].search(/(?:@|\bat\b)/i)))) {
+        hit = { qty: Number(m0[1]), thing: m0[2], unit: money(m0[3]), text: m0[0] };
+      }
+      const m1 = !hit ? clause.match(qtyPrice[1]) : null;
+      if (m1 && !TIME_UNIT.test(m1[1].trim().split(/\s+/).pop() ?? "") && !/\brate$/i.test(m1[1].trim())) hit = { qty: Number(m1[2]), thing: m1[1], unit: money(m1[3]), text: m1[0] };
+      const m2 = !hit ? clause.match(qtyPrice[2]) : null;
+      if (m2) hit = { qty: Number(m2[1]), thing: m2[3] || "", unit: money(m2[2]), text: m2[0] };
+      if (!hit || !(hit.qty > 0) || !(hit.unit > 0)) break;
+      const thing = cleanDesc(hit.thing.replace(/\b(?:each|ea|per|a|an)\b/gi, " "));
+      const kind: LineItem["kind"] = /\b(?:hrs?|hours?)\b/i.test(thing) ? "labour" : PARTS_KW.test(thing) || !thing ? "parts" : "other";
+      items.push({
+        id: uid("li_"),
+        kind,
+        description: sentence(thing || "Items").slice(0, 120),
+        quantity: hit.qty,
+        unitAmount: hit.unit,
+        unit: "QUANTITY",
+      });
+      clause = clause.replace(hit.text, " ");
+    }
+
     // quantity: x2, 2x, 2 x, "two of"
     let qty = 1;
     const qtyM = clause.match(/\bx\s?(\d{1,3})\b|\b(\d{1,3})\s?x\b(?!\s?\d)|\b(\d{1,3})\s?x\s(?=[a-z])/i);
@@ -383,7 +429,13 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
     const isParts = PARTS_KW.test(clause);
     const isFixed = FIXED_KW.test(clause) && !isParts;
     const isWaste = WASTE_KW.test(clause);
-    const keyworded = isCallout || isParts || isFixed || isWaste || CHARGE_KW.test(clause) || RATE_KW.test(clause);
+    // "chemicals 35", "EICR cert 60", "petrol 8": a bare number straight after an item name is money.
+    const trailing = clause.match(new RegExp(String.raw`(?:^|\s)([a-z][a-z&'’.\- ]*[a-z])\s+(${N})\s*$`, "i"));
+    const itemPriced =
+      !!trailing &&
+      !/\b(?:flat|unit|no|number|room|house|plot|bay|floor|stage|phase|zone|week|day|job|apt|apartment|block|level|door|year|years|age|aged|ref|invoice)$/i.test(trailing[1].trim()) &&
+      /[a-z]{3,}/i.test(trailing[1]);
+    const keyworded = isCallout || isParts || isFixed || isWaste || CHARGE_KW.test(clause) || RATE_KW.test(clause) || itemPriced;
     // House numbers are already gone with the address; drop any street-style "12 high st" left.
     clause = clause.replace(new RegExp(String.raw`\b\d{1,4}[a-z]?\s+(?:[a-z'’]+\s+){1,3}(?:${STREET})\b`, "gi"), " ");
     const amounts = findMoney(clause, keyworded);

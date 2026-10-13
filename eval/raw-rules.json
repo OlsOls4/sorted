@@ -1,6 +1,6 @@
 {
   "engine": "rules",
-  "startedAt": "2026-10-13T14:32:32.016Z",
+  "startedAt": "2026-10-13T15:33:12.479Z",
   "url": null,
   "calls": 0,
   "results": [
@@ -19,7 +19,7 @@
         "jobSummary": "Fixed leaking stopcock at 12 Cotham Hill",
         "items": [
           {
-            "id": "li_mv6s5w29kq0fw8yi",
+            "id": "li_mv6ubq1goe2ns6d6",
             "kind": "labour",
             "description": "Labour — Fixed leaking stopcock",
             "quantity": 2.5,
@@ -27,7 +27,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w29h45rnwts",
+            "id": "li_mv6ubq1gyuxmcab9",
             "kind": "parts",
             "description": "New valve",
             "quantity": 1,
@@ -35,7 +35,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w29t206i5u8",
+            "id": "li_mv6ubq1g7wamheqt",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -67,7 +67,7 @@
         "jobSummary": "Unblocked kitchen sink at 4 Ashley Down Rd",
         "items": [
           {
-            "id": "li_mv6s5w2cpgbhe34u",
+            "id": "li_mv6ubq1n9m7c7wgd",
             "kind": "labour",
             "description": "Labour — Unblocked kitchen sink",
             "quantity": 1,
@@ -99,7 +99,7 @@
         "jobSummary": "Replaced toilet syphon at 33 Gloucester Rd",
         "items": [
           {
-            "id": "li_mv6s5w2e0mtxyz49",
+            "id": "li_mv6ubq1u9oy2evjt",
             "kind": "labour",
             "description": "Labour — Replaced toilet syphon",
             "quantity": 1.5,
@@ -107,7 +107,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2earl2ttd0",
+            "id": "li_mv6ubq1uqsw8a71n",
             "kind": "parts",
             "description": "Syphon",
             "quantity": 1,
@@ -139,7 +139,7 @@
         "jobSummary": "Flat 3 burst pipe under sink",
         "items": [
           {
-            "id": "li_mv6s5w2fkpgfy2e1",
+            "id": "li_mv6ubq1v3aqt4t0g",
             "kind": "labour",
             "description": "Labour — Flat 3 burst pipe under sink",
             "quantity": 2,
@@ -147,7 +147,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2f8q0gak4w",
+            "id": "li_mv6ubq1v2t8nro6h",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -155,7 +155,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2fujsssboe",
+            "id": "li_mv6ubq1vshnvrinm",
             "kind": "parts",
             "description": "Copper fittings",
             "quantity": 1,
@@ -187,7 +187,7 @@
         "jobSummary": "Boiler serivce",
         "items": [
           {
-            "id": "li_mv6s5w2gs0rcn5hc",
+            "id": "li_mv6ubq207a78upml",
             "kind": "other",
             "description": "Boiler serivce",
             "quantity": 1,
@@ -221,7 +221,7 @@
         "jobSummary": "Fitted new kitchen tap at 9 Raleigh Rd",
         "items": [
           {
-            "id": "li_mv6s5w2gi9u7qzf3",
+            "id": "li_mv6ubq203li2jlng",
             "kind": "labour",
             "description": "Labour — Fitted new kitchen tap",
             "quantity": 1.25,
@@ -255,7 +255,7 @@
         "jobSummary": "Radiator valves x2",
         "items": [
           {
-            "id": "li_mv6s5w2gt442skwo",
+            "id": "li_mv6ubq21haahnrsh",
             "kind": "labour",
             "description": "Labour — Radiator valves x2",
             "quantity": 2,
@@ -263,7 +263,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2gtbt07vab",
+            "id": "li_mv6ubq206x7kp6ch",
             "kind": "parts",
             "description": "Radiator valves",
             "quantity": 2,
@@ -271,7 +271,7 @@
             "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2gov67h3yo",
+            "id": "li_mv6ubq21h3581duj",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -305,12 +305,28 @@
         "jobSummary": "Power flushed system for the Coopers",
         "items": [
           {
-            "id": "li_mv6s5w2hp0e8hswo",
+            "id": "li_mv6ubq21kwssrk96",
             "kind": "labour",
             "description": "Labour — Power flushed system for the Coopers",
             "quantity": 6,
             "unitAmount": 45,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq21ohn79d77",
+            "kind": "parts",
+            "description": "Chemicals",
+            "quantity": 1,
+            "unitAmount": 35,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq21uulm0apm",
+            "kind": "parts",
+            "description": "Magnaclean filter",
+            "quantity": 1,
+            "unitAmount": 120,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -337,7 +353,7 @@
         "jobSummary": "Shower valve replaced",
         "items": [
           {
-            "id": "li_mv6s5w2hjg2u7m44",
+            "id": "li_mv6ubq22iay3kc50",
             "kind": "labour",
             "description": "Labour — Shower valve replaced",
             "quantity": 3,
@@ -345,7 +361,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2hbyqv9nsz",
+            "id": "li_mv6ubq22rw51hjqt",
             "kind": "parts",
             "description": "Parts & materials",
             "quantity": 1,
@@ -380,7 +396,7 @@
         "jobSummary": "Clifton Village Cafe",
         "items": [
           {
-            "id": "li_mv6s5w2hvhecakk4",
+            "id": "li_mv6ubq22aegw7rxc",
             "kind": "labour",
             "description": "Labour — Clifton Village Cafe",
             "quantity": 0.75,
@@ -388,7 +404,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2hj5c2w11n",
+            "id": "li_mv6ubq22zg9dhn8g",
             "kind": "parts",
             "description": "Washer and jubilee clip",
             "quantity": 1,
@@ -420,7 +436,7 @@
         "jobSummary": "New consumer unit fitted at 14 Redland Grove",
         "items": [
           {
-            "id": "li_mv6s5w2i4a5u1ucv",
+            "id": "li_mv6ubq22bn2m9g0r",
             "kind": "labour",
             "description": "Labour — New consumer unit fitted",
             "quantity": 7,
@@ -428,11 +444,19 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2iaogtt4ib",
+            "id": "li_mv6ubq22tbqqos9w",
             "kind": "parts",
             "description": "CU and breakers",
             "quantity": 1,
             "unitAmount": 210,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq22yutmwas4",
+            "kind": "parts",
+            "description": "EICR cert",
+            "quantity": 1,
+            "unitAmount": 60,
             "unit": "AMOUNT"
           }
         ],
@@ -460,12 +484,20 @@
         "jobSummary": "Added 2 double sockets in kitchen",
         "items": [
           {
-            "id": "li_mv6s5w2iolg3h9ku",
+            "id": "li_mv6ubq2349qimilq",
             "kind": "labour",
             "description": "Labour — Added 2 double sockets in kitchen",
             "quantity": 3.5,
             "unitAmount": 50,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq23sa5r5o69",
+            "kind": "parts",
+            "description": "Cable and sockets",
+            "quantity": 1,
+            "unitAmount": 38,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": true,
@@ -494,7 +526,7 @@
         "jobSummary": "Fault finding tripping RCD",
         "items": [
           {
-            "id": "li_mv6s5w2i3yuyhcix",
+            "id": "li_mv6ubq23me9jy3p2",
             "kind": "labour",
             "description": "Labour — Fault finding tripping RCD",
             "quantity": 1.5,
@@ -502,7 +534,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2izini3oy2",
+            "id": "li_mv6ubq2303yajnle",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -510,7 +542,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2ioa8dou59",
+            "id": "li_mv6ubq23lb8fe7vi",
             "kind": "parts",
             "description": "Faulty immersion element",
             "quantity": 1,
@@ -542,20 +574,12 @@
         "jobSummary": "Landlord EICR",
         "items": [
           {
-            "id": "li_mv6s5w2jtmkcwlvs",
-            "kind": "parts",
+            "id": "li_mv6ubq24h9rgjcit",
+            "kind": "other",
             "description": "Flats",
-            "quantity": 1,
-            "unitAmount": 3,
-            "unit": "AMOUNT"
-          },
-          {
-            "id": "li_mv6s5w2jmiw8sn9v",
-            "kind": "parts",
-            "description": "Flats",
-            "quantity": 1,
+            "quantity": 3,
             "unitAmount": 120,
-            "unit": "AMOUNT"
+            "unit": "QUANTITY"
           }
         ],
         "vatEnabled": true,
@@ -582,7 +606,7 @@
         "jobSummary": "Outdoor light",
         "items": [
           {
-            "id": "li_mv6s5w2jc9vtgabj",
+            "id": "li_mv6ubq25fy83ovcc",
             "kind": "labour",
             "description": "Labour — Outdoor light",
             "quantity": 2,
@@ -590,11 +614,19 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2ja2czpq7l",
+            "id": "li_mv6ubq251eumptnz",
             "kind": "parts",
             "description": "Light",
             "quantity": 1,
             "unitAmount": 45,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq25v5257xim",
+            "kind": "parts",
+            "description": "Sundries",
+            "quantity": 1,
+            "unitAmount": 10,
             "unit": "AMOUNT"
           }
         ],
@@ -624,7 +656,7 @@
         "jobSummary": "EV charger install",
         "items": [
           {
-            "id": "li_mv6s5w2jg2pie3ta",
+            "id": "li_mv6ubq25kjl0ion9",
             "kind": "parts",
             "description": "Charger supplied",
             "quantity": 1,
@@ -632,7 +664,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2jqd8t281a",
+            "id": "li_mv6ubq25qf15f3vt",
             "kind": "other",
             "description": "EV charger install",
             "quantity": 1,
@@ -664,7 +696,7 @@
         "jobSummary": "Swapped 6 downlights to LED",
         "items": [
           {
-            "id": "li_mv6s5w2jqgjki2vd",
+            "id": "li_mv6ubq2641x4pct5",
             "kind": "labour",
             "description": "Labour — Swapped 6 downlights to LED",
             "quantity": 2,
@@ -672,8 +704,8 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2jozdx5ij1",
-            "kind": "parts",
+            "id": "li_mv6ubq26og08mtkf",
+            "kind": "other",
             "description": "Lamps",
             "quantity": 6,
             "unitAmount": 8,
@@ -706,12 +738,28 @@
         "jobSummary": "Hung 3 internal doors at 2 Church Lane",
         "items": [
           {
-            "id": "li_mv6s5w2kyk73vezi",
+            "id": "li_mv6ubq29klp0a0hr",
             "kind": "labour",
             "description": "Labour — Hung 3 internal doors (1 day)",
             "quantity": 1,
             "unitAmount": 220,
             "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6ubq29niymugbo",
+            "kind": "parts",
+            "description": "Doors and hinges",
+            "quantity": 1,
+            "unitAmount": 285,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq29nw0gbhs3",
+            "kind": "parts",
+            "description": "Door furniture",
+            "quantity": 1,
+            "unitAmount": 54,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -740,7 +788,7 @@
         "jobSummary": "Fitted skirting in lounge",
         "items": [
           {
-            "id": "li_mv6s5w2kty085qp0",
+            "id": "li_mv6ubq299ky1i4o9",
             "kind": "labour",
             "description": "Labour — Fitted skirting in lounge (2 days)",
             "quantity": 2,
@@ -748,7 +796,7 @@
             "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2k5nnp63ri",
+            "id": "li_mv6ubq29q35tp9g9",
             "kind": "parts",
             "description": "Timber",
             "quantity": 1,
@@ -780,7 +828,7 @@
         "jobSummary": "Built in wardrobe",
         "items": [
           {
-            "id": "li_mv6s5w2kewwsqhrk",
+            "id": "li_mv6ubq29jz2x6wh0",
             "kind": "other",
             "description": "Built in wardrobe",
             "quantity": 1,
@@ -814,7 +862,7 @@
         "jobSummary": "Fixed sticking sash window",
         "items": [
           {
-            "id": "li_mv6s5w2kvlunplpy",
+            "id": "li_mv6ubq29761hzz1f",
             "kind": "labour",
             "description": "Labour — Fixed sticking sash window",
             "quantity": 2,
@@ -822,7 +870,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2kkyqag0pq",
+            "id": "li_mv6ubq293ty1ehb2",
             "kind": "parts",
             "description": "Sash cord",
             "quantity": 1,
@@ -830,7 +878,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2k2k47u2v7",
+            "id": "li_mv6ubq295dbcbazg",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -864,7 +912,7 @@
         "jobSummary": "Decking repair",
         "items": [
           {
-            "id": "li_mv6s5w2k1hs3eg5j",
+            "id": "li_mv6ubq2atvf2i61d",
             "kind": "labour",
             "description": "Labour — Decking repair",
             "quantity": 5,
@@ -872,19 +920,19 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2krwlnamo9",
-            "kind": "parts",
+            "id": "li_mv6ubq2a6yxl83p4",
+            "kind": "other",
             "description": "Boards",
-            "quantity": 1,
-            "unitAmount": 6,
-            "unit": "AMOUNT"
+            "quantity": 6,
+            "unitAmount": 14.5,
+            "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2k8ktwnc7m",
+            "id": "li_mv6ubq2aac3pde05",
             "kind": "parts",
-            "description": "Boards",
+            "description": "Screws",
             "quantity": 1,
-            "unitAmount": 14.5,
+            "unitAmount": 12,
             "unit": "AMOUNT"
           }
         ],
@@ -912,7 +960,7 @@
         "jobSummary": "End of tenancy clean at 14 Brook St",
         "items": [
           {
-            "id": "li_mv6s5w2l181q8hc0",
+            "id": "li_mv6ubq2a4upmxiwh",
             "kind": "labour",
             "description": "Labour (5 hrs)",
             "quantity": 1,
@@ -920,7 +968,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2lx9m6z5ls",
+            "id": "li_mv6ubq2aqen58pou",
             "kind": "parts",
             "description": "Oven clean",
             "quantity": 1,
@@ -952,7 +1000,7 @@
         "jobSummary": "Weekly clean",
         "items": [
           {
-            "id": "li_mv6s5w2lq8rkgqmy",
+            "id": "li_mv6ubq2actihrcdl",
             "kind": "labour",
             "description": "Labour — Weekly clean",
             "quantity": 3,
@@ -986,7 +1034,7 @@
         "jobSummary": "Deep clean",
         "items": [
           {
-            "id": "li_mv6s5w2l2nrd60k4",
+            "id": "li_mv6ubq2b8hxgxty3",
             "kind": "labour",
             "description": "Labour — Deep clean",
             "quantity": 6.5,
@@ -994,7 +1042,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2ld2x3yr41",
+            "id": "li_mv6ubq2bn1m2pzco",
             "kind": "parts",
             "description": "Cleaning products",
             "quantity": 1,
@@ -1026,12 +1074,20 @@
         "jobSummary": "Office clean",
         "items": [
           {
-            "id": "li_mv6s5w2lxoilw8u5",
+            "id": "li_mv6ubq2bny6qkzgm",
             "kind": "labour",
             "description": "Labour — Office clean",
             "quantity": 4,
             "unitAmount": 20,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq2bwtlx30y8",
+            "kind": "parts",
+            "description": "Carpet machine hire",
+            "quantity": 1,
+            "unitAmount": 35,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -1060,19 +1116,19 @@
         "jobSummary": "Carpet clean 3 rooms",
         "items": [
           {
-            "id": "li_mv6s5w2mawjrc62s",
-            "kind": "parts",
-            "description": "Carpet clean rooms a room",
-            "quantity": 1,
-            "unitAmount": 3,
-            "unit": "AMOUNT"
+            "id": "li_mv6ubq2bdce0f6pd",
+            "kind": "other",
+            "description": "Rooms",
+            "quantity": 3,
+            "unitAmount": 40,
+            "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2m0gd58wkr",
+            "id": "li_mv6ubq2bgd6hx7j9",
             "kind": "parts",
-            "description": "Carpet clean rooms a room",
+            "description": "Stairs",
             "quantity": 1,
-            "unitAmount": 40,
+            "unitAmount": 25,
             "unit": "AMOUNT"
           }
         ],
@@ -1102,7 +1158,7 @@
         "jobSummary": "Mowed lawns and trimmed hedges",
         "items": [
           {
-            "id": "li_mv6s5w2mq4mp8mly",
+            "id": "li_mv6ubq2bohi3tk80",
             "kind": "labour",
             "description": "Labour — Mowed lawns and trimmed hedges",
             "quantity": 3,
@@ -1110,7 +1166,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2mswzeqk0z",
+            "id": "li_mv6ubq2bd9h8foee",
             "kind": "other",
             "description": "Green waste removal",
             "quantity": 1,
@@ -1144,7 +1200,7 @@
         "jobSummary": "Hedge cut",
         "items": [
           {
-            "id": "li_mv6s5w2ma1f11vkh",
+            "id": "li_mv6ubq2bw29jpwia",
             "kind": "labour",
             "description": "Labour — Hedge cut",
             "quantity": 4.5,
@@ -1152,11 +1208,19 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2m7dtvf6is",
+            "id": "li_mv6ubq2b0ijchjfg",
             "kind": "other",
             "description": "Tip",
             "quantity": 1,
             "unitAmount": 30,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq2bltm8029o",
+            "kind": "parts",
+            "description": "Petrol",
+            "quantity": 1,
+            "unitAmount": 8,
             "unit": "AMOUNT"
           }
         ],
@@ -1186,7 +1250,7 @@
         "jobSummary": "Fence panels replaced",
         "items": [
           {
-            "id": "li_mv6s5w2mk15c1o85",
+            "id": "li_mv6ubq2gllb49pez",
             "kind": "labour",
             "description": "Labour — Fence panels replaced",
             "quantity": 6,
@@ -1194,20 +1258,20 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2m1zdpmyql",
-            "kind": "parts",
+            "id": "li_mv6ubq2gbl34pbeo",
+            "kind": "other",
             "description": "Panels",
-            "quantity": 1,
-            "unitAmount": 3,
-            "unit": "AMOUNT"
+            "quantity": 3,
+            "unitAmount": 32,
+            "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2m48zvb2au",
-            "kind": "parts",
-            "description": "Panels",
-            "quantity": 1,
-            "unitAmount": 32,
-            "unit": "AMOUNT"
+            "id": "li_mv6ubq2gy88hkzl2",
+            "kind": "other",
+            "description": "Posts",
+            "quantity": 4,
+            "unitAmount": 15,
+            "unit": "QUANTITY"
           }
         ],
         "vatEnabled": false,
@@ -1234,7 +1298,7 @@
         "jobSummary": "Garden tidy",
         "items": [
           {
-            "id": "li_mv6s5w2mji98i5dk",
+            "id": "li_mv6ubq2g085kw48v",
             "kind": "labour",
             "description": "Labour — Garden tidy",
             "quantity": 4,
@@ -1242,7 +1306,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2mzrmh1jnd",
+            "id": "li_mv6ubq2g9jamu4gc",
             "kind": "other",
             "description": "Skip",
             "quantity": 1,
@@ -1276,7 +1340,7 @@
         "jobSummary": "Monthly maintenance contract Riverside Hotel",
         "items": [
           {
-            "id": "li_mv6s5w2nryqqx9k6",
+            "id": "li_mv6ubq2gnvtmet9k",
             "kind": "other",
             "description": "Additional charge",
             "quantity": 1,
@@ -1312,7 +1376,7 @@
         "jobSummary": "Painted lounge",
         "items": [
           {
-            "id": "li_mv6s5w2nqjlvefl2",
+            "id": "li_mv6ubq2hwx5tkpo7",
             "kind": "labour",
             "description": "Labour — Painted lounge (3 days)",
             "quantity": 3,
@@ -1320,7 +1384,7 @@
             "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2nnmjn1mdg",
+            "id": "li_mv6ubq2h6i4nqlbm",
             "kind": "parts",
             "description": "Paint tins dulux",
             "quantity": 1,
@@ -1328,11 +1392,19 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2nuuk8ok3s",
+            "id": "li_mv6ubq2hbc01yenf",
             "kind": "parts",
             "description": "Paint tins dulux",
             "quantity": 1,
             "unitAmount": 42,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq2hb2vevq14",
+            "kind": "parts",
+            "description": "Sundries",
+            "quantity": 1,
+            "unitAmount": 15,
             "unit": "AMOUNT"
           }
         ],
@@ -1362,12 +1434,20 @@
         "jobSummary": "Wallpapered feature wall",
         "items": [
           {
-            "id": "li_mv6s5w2n0xkuv5tx",
+            "id": "li_mv6ubq2hasdya4a1",
             "kind": "labour",
             "description": "Labour — Wallpapered feature wall",
             "quantity": 0.5,
             "unitAmount": 30,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq2hgst5u02g",
+            "kind": "parts",
+            "description": "Paste",
+            "quantity": 1,
+            "unitAmount": 11,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -1396,7 +1476,7 @@
         "jobSummary": "Gloss woodwork whole house",
         "items": [
           {
-            "id": "li_mv6s5w2nzyrf35x1",
+            "id": "li_mv6ubq2hqk91hglj",
             "kind": "other",
             "description": "Gloss woodwork whole house",
             "quantity": 1,
@@ -1428,7 +1508,7 @@
         "jobSummary": "Ceiling repaint after leak",
         "items": [
           {
-            "id": "li_mv6s5w2oi9u4oi4r",
+            "id": "li_mv6ubq2ivjfywahy",
             "kind": "labour",
             "description": "Labour — Ceiling repaint after leak",
             "quantity": 8,
@@ -1436,7 +1516,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2ozfsngys0",
+            "id": "li_mv6ubq2ip8r7lv04",
             "kind": "parts",
             "description": "Parts & materials",
             "quantity": 1,
@@ -1470,11 +1550,27 @@
         "jobSummary": "Exterior painting",
         "items": [
           {
-            "id": "li_mv6s5w2ob7nev6yd",
+            "id": "li_mv6ubq2ixhrh2292",
             "kind": "labour",
             "description": "Labour — Exterior painting (4 days)",
             "quantity": 4,
             "unitAmount": 190,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6ubq2iovh8bnyc",
+            "kind": "parts",
+            "description": "Scaffold tower hire",
+            "quantity": 1,
+            "unitAmount": 120,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6ubq2il052fdhx",
+            "kind": "other",
+            "description": "Masonry paint",
+            "quantity": 6,
+            "unitAmount": 38,
             "unit": "QUANTITY"
           }
         ],
@@ -1502,7 +1598,7 @@
         "jobSummary": "Replaced 8 slipped tiles",
         "items": [
           {
-            "id": "li_mv6s5w2os5mwjibt",
+            "id": "li_mv6ubq2id8329sa5",
             "kind": "labour",
             "description": "Labour — Replaced 8 slipped tiles",
             "quantity": 3,
@@ -1510,7 +1606,15 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2ovjcxf7r4",
+            "id": "li_mv6ubq2io0d6tzav",
+            "kind": "other",
+            "description": "Tiles",
+            "quantity": 8,
+            "unitAmount": 4.5,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6ubq2i5eiilrf9",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -1544,7 +1648,7 @@
         "jobSummary": "Gutter clear 2 houses Assoc",
         "items": [
           {
-            "id": "li_mv6s5w2oce9kenla",
+            "id": "li_mv6ubq2jnu7q8o0g",
             "kind": "parts",
             "description": "Per house",
             "quantity": 1,
@@ -1576,7 +1680,7 @@
         "jobSummary": "Flat roof re-felt garage",
         "items": [
           {
-            "id": "li_mv6s5w2ohklvoouw",
+            "id": "li_mv6ubq2jpr9po0kt",
             "kind": "other",
             "description": "Flat roof re-felt garage",
             "quantity": 1,
@@ -1611,7 +1715,7 @@
         "jobSummary": "Lock out at 11pm",
         "items": [
           {
-            "id": "li_mv6s5w2p01vgwi4v",
+            "id": "li_mv6ubq2j95xrvj6r",
             "kind": "labour",
             "description": "Labour — Lock out at 11pm",
             "quantity": 0.5,
@@ -1619,7 +1723,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2pxg5ghzkp",
+            "id": "li_mv6ubq2jpekdkvny",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -1627,7 +1731,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2p8j12buxv",
+            "id": "li_mv6ubq2j25hh2m23",
             "kind": "parts",
             "description": "New euro cylinder",
             "quantity": 1,
@@ -1661,7 +1765,7 @@
         "jobSummary": "Upvc door mech replaced",
         "items": [
           {
-            "id": "li_mv6s5w2ph3wc9o23",
+            "id": "li_mv6ubq2ju2o657tt",
             "kind": "labour",
             "description": "Labour — Upvc door mech replaced",
             "quantity": 1,
@@ -1669,7 +1773,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2pk76ao7bl",
+            "id": "li_mv6ubq2ja9kalvfb",
             "kind": "parts",
             "description": "Gearbox",
             "quantity": 1,
@@ -1703,7 +1807,7 @@
         "jobSummary": "Gas safety cert x 4 properties",
         "items": [
           {
-            "id": "li_mv6s5w2pwfyjulre",
+            "id": "li_mv6ubq2n45blh24r",
             "kind": "labour",
             "description": "Labour — Gas safety cert x 4 properties",
             "quantity": 2,
@@ -1711,7 +1815,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2pg98ireu7",
+            "id": "li_mv6ubq2ncrta9z7d",
             "kind": "other",
             "description": "Additional charge",
             "quantity": 1,
@@ -1719,7 +1823,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2plebuixsr",
+            "id": "li_mv6ubq2n93h98xil",
             "kind": "parts",
             "description": "A fan",
             "quantity": 1,
@@ -1753,7 +1857,7 @@
         "jobSummary": "New combi installed",
         "items": [
           {
-            "id": "li_mv6s5w2pmlt7kfon",
+            "id": "li_mv6ubq2nsi6lttt8",
             "kind": "labour",
             "description": "Labour — New combi installed (2 days)",
             "quantity": 2,
@@ -1761,15 +1865,15 @@
             "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2pivdyoakh",
+            "id": "li_mv6ubq2n7qn1dnpv",
             "kind": "parts",
             "description": "Worcester boiler",
             "quantity": 1,
-            "unitAmount": 1,
+            "unitAmount": 1350,
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2pv5wva2p8",
+            "id": "li_mv6ubq2nvdyjooob",
             "kind": "parts",
             "description": "Parts & materials — flue kit",
             "quantity": 1,
@@ -1801,12 +1905,20 @@
         "jobSummary": "Tiled bathroom floor",
         "items": [
           {
-            "id": "li_mv6s5w2qoooos5fj",
+            "id": "li_mv6ubq2o065a99io",
             "kind": "labour",
             "description": "Labour — Tiled bathroom floor",
             "quantity": 6,
             "unitAmount": 35,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq2ol9bssx9a",
+            "kind": "parts",
+            "description": "Adhesive and grout",
+            "quantity": 1,
+            "unitAmount": 28,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -1830,18 +1942,18 @@
         "customerName": "Mr Dobson",
         "customerEmail": "",
         "customerType": "consumer",
-        "jobSummary": "Splashback in kitchen 2.5 sq m at 45 Per Sq",
+        "jobSummary": "Splashback in kitchen 2.5 sq m",
         "items": [
           {
-            "id": "li_mv6s5w2qbvt5evp5",
-            "kind": "parts",
-            "description": "Splashback in kitchen sq m m",
-            "quantity": 1,
-            "unitAmount": 2.5,
-            "unit": "AMOUNT"
+            "id": "li_mv6ubq2o2j3r2q8l",
+            "kind": "other",
+            "description": "Sq m",
+            "quantity": 2.5,
+            "unitAmount": 45,
+            "unit": "QUANTITY"
           },
           {
-            "id": "li_mv6s5w2qk709dm4p",
+            "id": "li_mv6ubq2o9jo9mflu",
             "kind": "parts",
             "description": "Trims",
             "quantity": 1,
@@ -1875,7 +1987,7 @@
         "jobSummary": "Windows at 15 each at 6 Houses On Elm Close",
         "items": [
           {
-            "id": "li_mv6s5w2q0pdxvs3d",
+            "id": "li_mv6ubq2ojo5rphxh",
             "kind": "parts",
             "description": "Windows",
             "quantity": 1,
@@ -1883,7 +1995,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2qxnitea0x",
+            "id": "li_mv6ubq2objmmuubq",
             "kind": "parts",
             "description": "Conservatory roof no",
             "quantity": 1,
@@ -1891,7 +2003,7 @@
             "unit": "AMOUNT"
           },
           {
-            "id": "li_mv6s5w2qoaga2ev6",
+            "id": "li_mv6ubq2o55us2fd1",
             "kind": "parts",
             "description": "Conservatory roof no",
             "quantity": 1,
@@ -1926,7 +2038,7 @@
         "jobSummary": "Flatpack assembly 2 wardrobes",
         "items": [
           {
-            "id": "li_mv6s5w2qw5bct7wi",
+            "id": "li_mv6ubq2osiakwr84",
             "kind": "labour",
             "description": "Labour — Flatpack assembly 2 wardrobes",
             "quantity": 4,
@@ -1960,12 +2072,20 @@
         "jobSummary": "Bits n bobs",
         "items": [
           {
-            "id": "li_mv6s5w2qtyx7tbyt",
+            "id": "li_mv6ubq2pl0kqs31m",
             "kind": "labour",
             "description": "Labour — Bits n bobs",
             "quantity": 3,
             "unitAmount": 35,
             "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6ubq2p0ohls2lm",
+            "kind": "parts",
+            "description": "Sealant n rawlplugs",
+            "quantity": 1,
+            "unitAmount": 9.6,
+            "unit": "AMOUNT"
           }
         ],
         "vatEnabled": false,
@@ -1994,7 +2114,7 @@
         "jobSummary": "Kevin",
         "items": [
           {
-            "id": "li_mv6s5w2rvrdhf1lb",
+            "id": "li_mv6ubq2p9ha6b634",
             "kind": "labour",
             "description": "Labour — Kevin",
             "quantity": 0.5,
@@ -2002,7 +2122,7 @@
             "unit": "HOURS"
           },
           {
-            "id": "li_mv6s5w2rnlce103m",
+            "id": "li_mv6ubq2px1upxrzi",
             "kind": "callout",
             "description": "Call-out charge",
             "quantity": 1,
@@ -2023,5 +2143,5 @@
       }
     }
   ],
-  "finishedAt": "2026-10-13T14:32:43.683Z"
+  "finishedAt": "2026-10-13T15:33:15.073Z"
 }
