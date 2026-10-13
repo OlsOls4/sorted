@@ -36,10 +36,12 @@ export function AskSorted({
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Scroll the conversation itself (not the page) so the newest message stays in view.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const el = scrollRef.current;
+    if (el && msgs.length > 1) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [msgs, busy]);
 
   async function ask(text: string) {
@@ -69,7 +71,7 @@ export function AskSorted({
   }
 
   return (
-    <section className="card flex h-[560px] flex-col overflow-hidden" aria-labelledby="ask">
+    <section className="card flex h-[560px] flex-col overflow-hidden lg:absolute lg:inset-0 lg:h-auto" aria-labelledby="ask">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div>
           <h2 id="ask" className="text-base font-bold">
@@ -78,7 +80,7 @@ export function AskSorted({
           <p className="text-xs text-muted">Plain-English questions. Actions need your OK.</p>
         </div>
       </div>
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4" aria-live="polite">
         {msgs.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
             <div className={m.role === "user" ? "max-w-[85%] rounded-2xl rounded-br-md bg-ink px-3.5 py-2 text-sm text-white" : "max-w-[95%]"}>
@@ -113,12 +115,17 @@ export function AskSorted({
             <Spinner className="text-brand" /> Sorted is checking your ledger…
           </div>
         )}
-        <div ref={endRef} />
       </div>
       <div className="border-t border-line p-3">
-        <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+        <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Suggested questions">
           {SUGGESTIONS.map((s) => (
-            <button key={s} className="shrink-0 rounded-full border border-line px-2.5 py-1 text-xs text-ink-2 hover:border-brand hover:text-brand" onClick={() => ask(s)} disabled={busy}>
+            <button
+              key={s}
+              type="button"
+              className="rounded-full border border-line px-2.5 py-1 text-xs whitespace-nowrap text-ink-2 transition hover:border-brand hover:text-brand disabled:opacity-50"
+              onClick={() => ask(s)}
+              disabled={busy}
+            >
               {s}
             </button>
           ))}

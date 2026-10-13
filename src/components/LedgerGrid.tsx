@@ -8,6 +8,7 @@ import {
   type ColDef,
   type GridApi,
   type GridReadyEvent,
+  type GridSizeChangedEvent,
   type ICellRendererParams,
   type IRowNode,
   type RowClassParams,
@@ -15,9 +16,9 @@ import {
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { balance, daysOverdue, daysToPay, displayStatus, gbp, isOpen, round2, todayISO, ukDate, type DisplayStatus } from "@/lib/format";
-import { suggestStage } from "@/lib/ledger";
+import { STAGE_LABEL, suggestStage } from "@/lib/ledger";
 import type { Invoice } from "@/lib/types";
-import { StageBadge, StatusBadge } from "./ui";
+import { PayPalMark, StageBadge, StatusBadge } from "./ui";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -33,6 +34,7 @@ const sortedTheme = themeQuartz.withParams({
   selectedRowBackgroundColor: "#e5f6ef",
   fontFamily: "inherit",
   fontSize: 13,
+  cellHorizontalPaddingScale: 0.8,
   rowHeight: 52,
   headerHeight: 40,
   wrapperBorderRadius: 16,
@@ -53,14 +55,65 @@ interface Props {
   invoices: Invoice[];
   onRemind: (inv: Invoice) => void;
   onMarkPaid: (inv: Invoice) => void;
+  loading?: boolean;
 }
+
+const FILTER_LABEL: Record<Filter, string> = { all: "All", outstanding: "Outstanding", overdue: "Overdue", paid: "Paid" };
+
+// Minimum widths (px). Columns flex above these, and the lowest-priority ones are hidden when the
+// grid is too narrow to show them all, so nothing is clipped or ellipsised at 1280–1920px.
+const ACTIONS_W = 156;
+const MIN_W: Record<string, number> = {
+  customerName: 220,
+  number: 100,
+  _display: 120,
+  total: 108,
+  _balance: 128,
+  _overdue: 152,
+  issueDate: 112,
+  dueDate: 112,
+  paidDate: 112,
+  reminders: 128,
+  actions: ACTIONS_W,
+};
+// Hidden first → last as the grid narrows.
+const HIDE_ORDER = ["paidDate", "issueDate", "reminders", "number", "dueDate", "total", "_display"];
+const NARROW_PX = 760;
+
+function fitColumns(api: GridApi<Row>, width: number) {
+  if (!width) return;
+  const narrow = width < NARROW_PX;
+  const ids = Object.keys(MIN_W);
+  const visible = new Set(ids);
+  // Leave room for a vertical scrollbar on platforms that draw one.
+  const room = width - 18;
+  const need = () => [...visible].reduce((s, id) => s + MIN_W[id], 0);
+  for (const id of HIDE_ORDER) {
+    if (need() <= room) break;
+    visible.delete(id);
+  }
+  api.setColumnsVisible(ids.filter((i) => visible.has(i)), true);
+  api.setColumnsVisible(ids.filter((i) => !visible.has(i)), false);
+  // On phones pinned columns would eat the whole viewport, so everything scrolls together.
+  api.setColumnsPinned(["customerName"], narrow ? null : "left");
+  api.setColumnsPinned(["actions"], narrow ? null : "right");
+}
+
+// Text colours meet WCAG AA on white; the bar uses the same hue.
+const severity = (od: number) => (od >= 30 ? "#b42318" : od >= 14 ? "#c2410c" : "#b45309");
 
 // ---------- cell renderers ----------
 
 function CustomerCell(p: ICellRendererParams<Row>) {
   const r = p.data;
   if (!r) return null;
-  if (r._pinned) return <span className="font-bold">{r.customerName}</span>;
+  if (r._pinned)
+    return (
+      <span className="flex h-full flex-col justify-center leading-tight">
+        <span className="font-bold">{r.customerName}</span>
+        {r.jobSummary && <span className="text-[11px] font-normal text-muted">{r.jobSummary}</span>}
+      </span>
+    );
   const initials = r.customerName
     .replace(/^(Mrs|Mr|Ms|Miss|Dr)\.?\s+/i, "")
     .split(/\s+/)
@@ -104,11 +157,11 @@ function OverdueCell(p: ICellRendererParams<Row>) {
   if (!isOpen(r)) return <span className="text-xs text-muted">—</span>;
   if (r._overdue <= 0) return <span className="text-xs text-muted">due in {-r._overdue}d</span>;
   const pct = Math.min(100, (r._overdue / 60) * 100);
-  const color = r._overdue >= 30 ? "#b42318" : r._overdue >= 14 ? "#dc6803" : "#f79009";
+  const color = severity(r._overdue);
   return (
     <div className="flex h-full flex-col justify-center gap-1">
       <span className="text-xs font-bold" style={{ color }}>
-        {r._overdue} days
+        {r._overdue} day{r._overdue === 1 ? "" : "s"}
       </span>
       <span className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
@@ -123,7 +176,7 @@ function RemindersCell(p: ICellRendererParams<Row>) {
   if (!r.reminders.length) return <span className="text-xs text-muted">{r._overdue > 0 && isOpen(r) ? "none yet" : "—"}</span>;
   const last = r.reminders[r.reminders.length - 1];
   return (
-    <div className="flex h-full items-center gap-1.5" title={r.reminders.map((x) => `${ukDate(x.sentAt.slice(0, 10))}: ${x.subject}`).join("\n")}>
+    <div className="flex h-full items-center gap-1.5 leading-tight" title={r.reminders.map((x) => `${ukDate(x.sentAt.slice(0, 10))}: ${x.subject}`).join("\n")}>
       <StageBadge stage={last.stage} />
       <span className="text-[11px] text-muted">×{r.reminders.length}</span>
     </div>
@@ -134,33 +187,59 @@ function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]
   const r = p.data;
   if (!r || r._pinned) return null;
   const open = isOpen(r) && r._balance > 0;
-  const link = r.merchantViewUrl ?? r.payerViewUrl;
+  // Demo rows point at a mock PayPal, so only real invoices get the PayPal link.
+  const link = r.source === "mock" ? undefined : (r.merchantViewUrl ?? r.payerViewUrl);
   return (
     <div className="flex h-full items-center gap-1">
       {open && (
         <button
+          type="button"
           className={`rounded-lg px-2 py-1 text-xs font-semibold ${r._overdue > 0 ? "bg-bad text-white hover:opacity-90" : "border border-line hover:bg-paper"}`}
           onClick={() => p.onRemind(r)}
-          title={`Draft a ${suggestStage(r)} reminder`}
+          title={`Draft a ${STAGE_LABEL[suggestStage(r)].toLowerCase()} for ${r.customerName}`}
+          aria-label={`${r._overdue > 0 ? "Chase" : "Remind"} ${r.customerName} about ${r.number}`}
         >
           {r._overdue > 0 ? "Chase" : "Remind"}
         </button>
       )}
       {open && (
-        <button className="rounded-lg border border-line px-2 py-1 text-xs font-semibold hover:bg-paper" onClick={() => p.onMarkPaid(r)} title="Record a cash / bank transfer payment">
+        <button
+          type="button"
+          className="rounded-lg border border-line px-2 py-1 text-xs font-semibold hover:bg-paper"
+          onClick={() => p.onMarkPaid(r)}
+          title="Record a cash or bank transfer payment"
+          aria-label={`Mark ${r.number} as paid`}
+        >
           Paid
         </button>
       )}
       {link && (
         <a
-          className="rounded-lg px-1.5 py-1 text-xs font-semibold text-pp-2 hover:underline"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-pp-2 hover:bg-sky-50"
           href={link}
           target="_blank"
           rel="noreferrer"
-          title={r.source === "mock" ? "Demo link (mock PayPal)" : "Open in PayPal"}
+          title="Open in PayPal"
+          aria-label={`Open ${r.number} in PayPal`}
         >
-          PayPal ↗
+          <PayPalMark />
         </a>
+      )}
+      {!open && !link && <span className="text-xs text-muted">—</span>}
+    </div>
+  );
+}
+
+function NoRowsOverlay(p: { emptyRef: { current: boolean } }) {
+  return (
+    <div className="px-4 py-3 text-center text-sm text-muted">
+      {p.emptyRef.current ? (
+        <>
+          <div className="font-semibold text-ink">No invoices yet</div>
+          Describe a finished job above and Sorted will draft your first one.
+        </>
+      ) : (
+        "No invoices match. Try another filter or clear the search."
       )}
     </div>
   );
@@ -168,8 +247,13 @@ function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]
 
 // ---------- grid ----------
 
-export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
+export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: Props) {
   const apiRef = useRef<GridApi<Row> | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const emptyRef = useRef(invoices.length === 0);
+  useEffect(() => {
+    emptyRef.current = invoices.length === 0;
+  }, [invoices.length]);
   const [quick, setQuick] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const filterRef = useRef<Filter>("all");
@@ -201,10 +285,14 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
   const recomputePinned = useCallback(() => {
     const api = apiRef.current;
     if (!api) return;
-    let n = 0, total = 0, bal = 0, paid = 0;
+    let n = 0, cancelled = 0, total = 0, bal = 0, paid = 0;
     api.forEachNodeAfterFilter((node: IRowNode<Row>) => {
       const d = node.data;
-      if (!d || d.status === "CANCELLED") return;
+      if (!d) return;
+      if (d.status === "CANCELLED") {
+        cancelled++;
+        return;
+      }
       n++;
       total += d.total;
       bal += d._balance;
@@ -214,8 +302,9 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
       {
         _pinned: true,
         id: "__totals",
-        number: `${n} invoice${n === 1 ? "" : "s"}`,
-        customerName: "Totals (filtered)",
+        number: "",
+        customerName: "Totals",
+        jobSummary: `${n} invoice${n === 1 ? "" : "s"}${cancelled ? ` · ${cancelled} cancelled not counted` : ""}`,
         total: round2(total),
         _balance: round2(bal),
         amountPaid: round2(paid),
@@ -237,19 +326,20 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
         headerName: "Customer",
         field: "customerName",
         cellRenderer: CustomerCell,
-        minWidth: 220,
-        flex: 2,
+        minWidth: MIN_W.customerName,
+        flex: 2.4,
         filter: "agTextColumnFilter",
-        getQuickFilterText: (p) => `${p.data?.customerName} ${p.data?.customerEmail} ${p.data?.jobSummary}`,
+        getQuickFilterText: (p) => `${p.data?.customerName} ${p.data?.customerEmail} ${p.data?.jobSummary} ${p.data?.number}`,
         pinned: "left",
         lockPinned: true,
       },
-      { headerName: "Invoice", field: "number", width: 110, filter: "agTextColumnFilter", cellClass: "font-mono text-xs" },
+      { headerName: "Invoice", field: "number", minWidth: MIN_W.number, flex: 1, filter: "agTextColumnFilter", cellClass: "font-mono text-xs" },
       {
         headerName: "Status",
         field: "_display",
         cellRenderer: StatusCell,
-        width: 130,
+        minWidth: MIN_W._display,
+        flex: 1.1,
         filter: "agTextColumnFilter",
         comparator: (a: string, b: string) => {
           const order = ["Overdue", "Due soon", "Part paid", "Sent", "Draft", "Paid", "Refunded", "Cancelled"];
@@ -261,7 +351,8 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
         field: "total",
         valueFormatter: money,
         type: "rightAligned",
-        width: 115,
+        minWidth: MIN_W.total,
+        flex: 1,
         filter: "agNumberColumnFilter",
         cellClass: "font-semibold tabular-nums",
       },
@@ -270,7 +361,8 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
         field: "_balance",
         valueFormatter: (p) => (p.value ? gbp(p.value) : p.data?._pinned ? gbp(0) : "—"),
         type: "rightAligned",
-        width: 130,
+        minWidth: MIN_W._balance,
+        flex: 1.1,
         filter: "agNumberColumnFilter",
         cellClassRules: { "text-bad font-bold": (p) => !!p.data && !p.data._pinned && p.data._overdue > 0 && (p.value ?? 0) > 0 },
         cellClass: "tabular-nums",
@@ -279,20 +371,22 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
         headerName: "Days overdue",
         field: "_overdue",
         cellRenderer: OverdueCell,
-        width: 135,
+        minWidth: MIN_W._overdue,
+        flex: 1.1,
         filter: "agNumberColumnFilter",
         sort: "desc",
         sortIndex: 0,
       },
-      { headerName: "Issued", field: "issueDate", valueFormatter: dateFmt, width: 120, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
-      { headerName: "Due", field: "dueDate", valueFormatter: dateFmt, width: 120, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
-      { headerName: "Paid", field: "paidDate", valueFormatter: dateFmt, width: 120, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
+      { headerName: "Issued", field: "issueDate", valueFormatter: dateFmt, minWidth: MIN_W.issueDate, flex: 1, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
+      { headerName: "Due", field: "dueDate", valueFormatter: dateFmt, minWidth: MIN_W.dueDate, flex: 1, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
+      { headerName: "Paid", field: "paidDate", valueFormatter: dateFmt, minWidth: MIN_W.paidDate, flex: 1, filter: "agDateColumnFilter", filterParams: { comparator: dateComparator } },
       {
         headerName: "Reminders",
         colId: "reminders",
         valueGetter: (p) => p.data?.reminders?.length ?? 0,
         cellRenderer: RemindersCell,
-        width: 150,
+        minWidth: MIN_W.reminders,
+        flex: 1.1,
         filter: "agNumberColumnFilter",
       },
       {
@@ -300,28 +394,32 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
         colId: "actions",
         cellRenderer: ActionsCell,
         cellRendererParams: { onRemind, onMarkPaid },
-        width: 200,
+        width: ACTIONS_W,
+        minWidth: ACTIONS_W,
         sortable: false,
         filter: false,
         resizable: false,
+        suppressHeaderFilterButton: true,
         pinned: "right",
+        lockPinned: true,
       },
     ],
     [onRemind, onMarkPaid],
   );
 
-  const defaultColDef = useMemo<ColDef<Row>>(() => ({ sortable: true, resizable: true, floatingFilter: false, suppressHeaderMenuButton: false }), []);
+  const defaultColDef = useMemo<ColDef<Row>>(() => ({ sortable: true, resizable: true, floatingFilter: false, suppressHeaderMenuButton: true }), []);
 
   const onGridReady = useCallback(
     (e: GridReadyEvent<Row>) => {
       apiRef.current = e.api;
       recomputePinned();
-      const narrow = window.innerWidth < 768;
-      e.api.setColumnsVisible(["issueDate", "paidDate", "reminders", "number"], !narrow);
-      if (narrow) e.api.setColumnsPinned(["customerName"], null);
+      fitColumns(e.api, boxRef.current?.clientWidth ?? window.innerWidth);
     },
     [recomputePinned],
   );
+
+  const onGridSizeChanged = useCallback((e: GridSizeChangedEvent<Row>) => fitColumns(e.api, e.clientWidth), []);
+  const quickTrimmed = quick.trim();
 
   useEffect(() => {
     filterRef.current = filter;
@@ -341,27 +439,56 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
           <h2 id="ledger" className="text-base font-bold">
             Ledger
           </h2>
-          <p className="text-xs text-muted">Every invoice, synced with PayPal. Sort, filter, chase.</p>
+          <p className="text-xs text-muted">Every invoice in one place. Sort, filter, chase.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-xl border border-line p-0.5 text-xs font-semibold">
+          <div className="flex max-w-full overflow-x-auto rounded-xl border border-line p-0.5 text-xs font-semibold" role="group" aria-label="Filter by status">
             {(["all", "outstanding", "overdue", "paid"] as Filter[]).map((f) => (
               <button
                 key={f}
+                type="button"
+                aria-pressed={filter === f}
                 onClick={() => setFilter(f)}
-                className={`rounded-lg px-2.5 py-1.5 capitalize transition ${filter === f ? (f === "overdue" ? "bg-bad text-white" : "bg-ink text-white") : "text-muted hover:text-ink"}`}
+                className={`shrink-0 rounded-lg px-2.5 py-1.5 whitespace-nowrap transition ${filter === f ? (f === "overdue" ? "bg-bad text-white" : "bg-ink text-white") : "text-muted hover:text-ink"}`}
+                title={f === "all" ? "Every invoice, including cancelled ones (cancelled invoices are left out of the totals)" : undefined}
               >
-                {f} <span className="opacity-70">{counts[f]}</span>
+                {FILTER_LABEL[f]} <span className="tabular-nums opacity-70">{counts[f]}</span>
               </button>
             ))}
           </div>
-          <input
-            className="input w-full py-1.5 sm:w-52"
-            placeholder="Search customers, jobs…"
-            value={quick}
-            onChange={(e) => setQuick(e.target.value)}
-            aria-label="Search ledger"
-          />
+          <div className="relative w-full sm:w-56">
+            <svg className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="text"
+              name="ledger-search"
+              autoComplete="off"
+              spellCheck={false}
+              className="input py-1.5 pr-8 pl-8"
+              placeholder="Search customers, jobs…"
+              value={quick}
+              onChange={(e) => setQuick(e.target.value.replace(/^\s+/, ""))}
+              onBlur={() => setQuick((q) => q.trim())}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") setQuick("");
+              }}
+              aria-label="Search ledger"
+            />
+            {quick && (
+              <button
+                type="button"
+                className="absolute top-1/2 right-1.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-paper hover:text-ink"
+                onClick={() => setQuick("")}
+                aria-label="Clear search"
+              >
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                  <path d="M5 5l10 10M15 5L5 15" />
+                </svg>
+              </button>
+            )}
+          </div>
           <button
             className="btn-ghost px-3 py-1.5 text-xs"
             onClick={() =>
@@ -375,14 +502,14 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
           </button>
         </div>
       </div>
-      <div className="h-[520px] w-full">
+      <div ref={boxRef} className="h-[460px] w-full sm:h-[520px]">
         <AgGridReact<Row>
           theme={sortedTheme}
           rowData={rows}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           getRowId={(p) => p.data.id}
-          quickFilterText={quick}
+          quickFilterText={quickTrimmed}
           isExternalFilterPresent={() => filterRef.current !== "all"}
           doesExternalFilterPass={(node) => {
             const d = node.data;
@@ -400,11 +527,14 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid }: Props) {
           }}
           pinnedBottomRowData={pinned}
           onGridReady={onGridReady}
+          onGridSizeChanged={onGridSizeChanged}
+          loading={loading}
           onModelUpdated={recomputePinned}
           getRowClass={getRowClass}
           animateRows
           suppressCellFocus
-          overlayNoRowsTemplate='<span style="padding:12px;color:#5b6b7c">No invoices match. Try another filter.</span>'
+          noRowsOverlayComponent={NoRowsOverlay}
+          noRowsOverlayComponentParams={{ emptyRef }}
         />
       </div>
     </section>

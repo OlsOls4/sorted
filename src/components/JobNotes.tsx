@@ -5,10 +5,17 @@ import { api } from "@/lib/client";
 import type { EngineInfo, InvoiceDraft, Mode, Settings } from "@/lib/types";
 import { Spinner } from "./ui";
 
+// Short chip labels; clicking one fills the textarea with the full, realistic note.
 const EXAMPLES = [
-  "fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she's at patel.r@example.com",
-  "Boiler service at Mr Okafor's, 1.5 hours, callout £60. email j.okafor@example.com",
-  "rewired kitchen for Harbourside Lettings Ltd 2 days @ £220/day, materials £340.50 from Screwfix, accounts@harbourside-lettings.example due in 30 days",
+  {
+    label: "Stopcock · VAT on top",
+    note: "fixed leaking stopcock for mrs okafor at 12 cotham hill, 2.5 hrs plus new valve 18 quid, call out 45, she pays in 14 days, vat on top, email ngozi.okafor@example.com",
+  },
+  { label: "2 radiators · parts", note: "fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she's at patel.r@example.com" },
+  {
+    label: "Business · day rate",
+    note: "rewired kitchen for Harbourside Lettings Ltd 2 days @ £220/day, materials £340.50, accounts@harbourside-lettings.example due in 30 days",
+  },
 ];
 
 // Minimal typing for the Web Speech API (not in TS DOM lib everywhere).
@@ -40,6 +47,7 @@ export function JobNotes({
   const [speechOK, setSpeechOK] = useState(false);
   const recRef = useRef<SpeechRec | null>(null);
   const baseRef = useRef("");
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
@@ -91,7 +99,7 @@ export function JobNotes({
   }, [listening, notes]);
 
   const submit = useCallback(async () => {
-    if (!notes.trim()) return;
+    if (!notes.trim() || busy) return;
     if (listening) recRef.current?.stop();
     setBusy(true);
     try {
@@ -102,7 +110,7 @@ export function JobNotes({
     } finally {
       setBusy(false);
     }
-  }, [notes, listening, mode, settings, onDraft, onError]);
+  }, [notes, busy, listening, mode, settings, onDraft, onError]);
 
   return (
     <section className="card p-4 sm:p-5" aria-labelledby="newjob">
@@ -111,13 +119,14 @@ export function JobNotes({
           <h2 id="newjob" className="text-base font-bold">
             Just finished a job?
           </h2>
-          <p className="text-sm text-muted">Type or say what you did — Sorted writes the invoice.</p>
+          <p className="text-sm text-muted">Type or say what you did, the way you&apos;d jot it down. Sorted writes the invoice.</p>
         </div>
       </div>
       <div className="relative">
         <textarea
+          ref={textRef}
           className="input min-h-[112px] resize-y pr-14 text-[15px] leading-relaxed"
-          placeholder="e.g. fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she's at patel.r@example.com"
+          placeholder="e.g. fixed leaking stopcock for mrs okafor, 2.5 hrs, new valve 18 quid, call out 45, vat on top, ngozi.okafor@example.com"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           onKeyDown={(e) => {
@@ -144,19 +153,24 @@ export function JobNotes({
       </div>
       {listening && <p className="mt-1.5 text-xs font-medium text-bad">Listening… speak naturally, tap the mic to stop.</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button className="btn-primary" onClick={submit} disabled={busy || !notes.trim()}>
+        <button type="button" className="btn-primary" onClick={submit} disabled={busy || !notes.trim()} title="Ctrl/⌘ + Enter">
           {busy ? <Spinner /> : <span aria-hidden>✦</span>}
           {busy ? "Reading your notes…" : "Draft invoice"}
         </button>
         <span className="text-xs text-muted">or try:</span>
-        {EXAMPLES.map((ex, i) => (
+        {EXAMPLES.map((ex) => (
           <button
-            key={i}
-            className="max-w-[220px] truncate rounded-full border border-line bg-paper px-3 py-1 text-xs text-ink-2 hover:border-brand hover:text-brand"
-            onClick={() => setNotes(ex)}
-            title={ex}
+            key={ex.label}
+            type="button"
+            className="rounded-full border border-line bg-paper px-3 py-1 text-xs whitespace-nowrap text-ink-2 transition hover:border-brand hover:text-brand"
+            onClick={() => {
+              setNotes(ex.note);
+              textRef.current?.focus();
+            }}
+            title={ex.note}
+            aria-label={`Try example: ${ex.note}`}
           >
-            {ex}
+            {ex.label}
           </button>
         ))}
       </div>

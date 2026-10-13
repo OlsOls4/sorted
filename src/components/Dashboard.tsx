@@ -62,7 +62,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen pb-16">
       <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 2xl:max-w-[1440px]">
           <div className="flex items-center gap-3">
             <Link href="/" aria-label="Sorted home">
               <Logo className="text-xl" />
@@ -87,7 +87,7 @@ export function Dashboard() {
               </button>
             ) : null}
             <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => setShowConnect(true)} title="Use live PayPal sandbox invoicing">
-              <span className="text-pp">◉</span>
+              <span className="text-pp" aria-hidden="true">◉</span>
               <span className="hidden sm:inline">{c.status?.liveAvailable ? "PayPal" : "Connect PayPal sandbox"}</span>
               <span className="sm:hidden">PayPal</span>
             </button>
@@ -101,8 +101,8 @@ export function Dashboard() {
                 {c.syncing ? <Spinner /> : "↻"} Sync
               </button>
             )}
-            <button className="btn-ghost px-2.5 py-1.5" onClick={() => setShowSettings(true)} aria-label="Settings">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <button type="button" className="btn-ghost px-2.5 py-1.5" onClick={() => setShowSettings(true)} aria-label="Business settings" title="Business settings">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
               </svg>
@@ -120,11 +120,9 @@ export function Dashboard() {
         )}
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-5 px-4 pt-5">
+      <main className="mx-auto max-w-7xl space-y-5 px-4 pt-5 2xl:max-w-[1440px]">
         {!c.ready ? (
-          <div className="flex h-64 items-center justify-center text-muted">
-            <Spinner className="mr-2 text-brand" /> Loading your ledger…
-          </div>
+          <LoadingSkeleton />
         ) : (
           <>
             <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Key figures">
@@ -134,16 +132,18 @@ export function Dashboard() {
               <Kpi label="Avg. time to pay" value={kpi.avgDaysToPay !== undefined ? `${kpi.avgDaysToPay} days` : "—"} />
             </section>
 
-            <div className="grid gap-5 lg:grid-cols-3">
-              <div className="space-y-5 lg:col-span-2">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+              <div className="min-w-0 space-y-5 lg:col-span-2">
                 <JobNotes mode={c.mode} settings={c.settings} onDraft={onDraft} onError={onError} />
-                <LedgerGrid invoices={c.invoices} onRemind={onRemind} onMarkPaid={onMarkPaid} />
-              </div>
-              <div className="space-y-5">
                 <OverduePanel invoices={c.invoices} onChase={onRemind} />
+              </div>
+              {/* On desktop the chat fills the column's height without stretching the row. */}
+              <div className="relative min-w-0 lg:min-h-[560px]">
                 <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} />
               </div>
             </div>
+
+            <LedgerGrid invoices={c.invoices} onRemind={onRemind} onMarkPaid={onMarkPaid} loading={c.syncing && c.invoices.length === 0} />
           </>
         )}
       </main>
@@ -208,7 +208,16 @@ export function Dashboard() {
           onClose={() => setShowConnect(false)}
         />
       )}
-      {showSettings && <SettingsModal settings={c.settings} onSave={c.setSettings} onClose={() => setShowSettings(false)} />}
+      {showSettings && (
+        <SettingsModal
+          settings={c.settings}
+          onSave={(s) => {
+            c.setSettings(s);
+            toast("ok", "Settings saved.");
+          }}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4" aria-live="polite">
         {c.toasts.map((t) => (
@@ -223,6 +232,28 @@ export function Dashboard() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading your ledger">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="card h-[92px] animate-pulse p-4">
+            <div className="h-3 w-24 rounded bg-paper" />
+            <div className="mt-3 h-6 w-28 rounded bg-paper" />
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-3">
+        <div className="card h-64 animate-pulse lg:col-span-2" />
+        <div className="card h-64 animate-pulse" />
+      </div>
+      <p className="mt-4 flex items-center justify-center gap-2 text-sm text-muted">
+        <Spinner className="text-brand" /> Loading your ledger…
+      </p>
     </div>
   );
 }
