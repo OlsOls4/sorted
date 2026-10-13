@@ -22,7 +22,7 @@ const cache = new Map<string, { tools: Record<string, ToolLike>; toolkit: Toolki
 const TOOLKIT_TTL_MS = 30 * 60 * 1000;
 let loadError: string | null = null;
 
-export const TOOLKIT_TOOL_NAMES = ["list_invoices", "get_invoice", "send_invoice", "send_invoice_reminder"] as const;
+export const TOOLKIT_TOOL_NAMES = ["list_invoices", "get_invoice", "send_invoice", "send_invoice_reminder", "generate_invoice_qr_code", "cancel_sent_invoice"] as const;
 export type ToolkitToolName = (typeof TOOLKIT_TOOL_NAMES)[number];
 
 async function loadTools(cfg: PayPalConfig): Promise<{ tools: Record<string, ToolLike>; toolkit: ToolkitInstance } | null> {
@@ -41,7 +41,7 @@ async function loadTools(cfg: PayPalConfig): Promise<{ tools: Record<string, Too
       clientId: cfg.clientId,
       clientSecret: cfg.clientSecret,
       configuration: {
-        actions: { invoices: { list: true, get: true, send: true, sendReminder: true } },
+        actions: { invoices: { list: true, get: true, send: true, sendReminder: true, generateQRC: true, cancel: true } },
         context: { sandbox: isSandbox(cfg) },
       },
     });
@@ -71,7 +71,14 @@ export async function runToolkitTool(cfg: PayPalConfig, name: ToolkitToolName, a
     loaded.toolkit.client._accessToken = await new PayPalClient(cfg).getAccessToken();
   }
   const raw = await tool.execute(args, { toolCallId: crypto.randomUUID(), messages: [] });
-  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = raw; // e.g. a multipart body
+    }
+  }
   // Toolkit v1.11 reports PayPal HTTP failures as {"ok":false,"status":422,"message":...}
   // instead of throwing; treat that as a failure, never as success.
   const obj = parsed as { ok?: unknown; status?: unknown; message?: unknown; code?: unknown } | null;

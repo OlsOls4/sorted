@@ -126,7 +126,7 @@ export interface ToolTraceEntry {
   via?: "paypal-agent-toolkit" | "paypal-rest" | "mock-paypal" | "ledger";
 }
 
-export type PendingAction =
+export type PendingAction = (
   | {
       type: "send_reminder";
       invoiceId: string;
@@ -146,7 +146,11 @@ export type PendingAction =
       invoiceNumber: string;
       customerName: string;
       amount: number;
-    };
+    }
+) & {
+  /** Server-signed, short-lived approval for exactly this action (verified by the write route). */
+  approvalToken?: string;
+};
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -158,6 +162,8 @@ export interface ChatResponse {
   engine: EngineInfo;
   toolTrace: ToolTraceEntry[];
   pendingAction?: PendingAction;
+  /** A PayPal invoice QR code the agent generated (generate_invoice_qr_code). */
+  qr?: { invoiceId: string; invoiceNumber: string; dataUrl: string; payerViewUrl?: string; via: ToolTraceEntry["via"] };
 }
 
 export type Mode = "demo" | "live";

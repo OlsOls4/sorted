@@ -7,9 +7,9 @@ import type { PaymentEvent } from "@/lib/events";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, Settings, ToolTraceEntry } from "@/lib/types";
 import { EngineBadge, RichText, Spinner } from "./ui";
 
-const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer"];
+const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer", "QR code for my worst payer"];
 
-type UIMsg = ChatMessage & { meta?: Pick<ChatResponse, "engine" | "toolTrace" | "pendingAction">; actionState?: "done" | "dismissed" };
+type UIMsg = ChatMessage & { meta?: Pick<ChatResponse, "engine" | "toolTrace" | "pendingAction" | "qr">; actionState?: "done" | "dismissed" };
 
 const VIA_LABEL: Record<NonNullable<ToolTraceEntry["via"]>, string> = {
   "paypal-agent-toolkit": "PayPal Agent Toolkit",
@@ -81,7 +81,7 @@ export function AskSorted({
         ledger: invoices,
         settings,
       });
-      setMsgs((m) => [...m, { role: "assistant", content: res.reply, meta: { engine: res.engine, toolTrace: res.toolTrace, pendingAction: res.pendingAction } }]);
+      setMsgs((m) => [...m, { role: "assistant", content: res.reply, meta: { engine: res.engine, toolTrace: res.toolTrace, pendingAction: res.pendingAction, qr: res.qr } }]);
     } catch (e) {
       setMsgs((m) => [...m, { role: "assistant", content: `Sorry — ${(e as Error).message}` }]);
     } finally {
@@ -113,6 +113,23 @@ export function AskSorted({
               ) : (
                 <div className="rounded-2xl rounded-bl-md bg-paper px-3.5 py-2.5 text-ink-2">
                   <RichText text={m.content} />
+                  {m.meta?.qr && (
+                    <figure className="mt-2 inline-flex flex-col items-center rounded-xl bg-white p-2 ring-1 ring-line">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={m.meta.qr.dataUrl} alt={`PayPal QR code to pay ${m.meta.qr.invoiceNumber}`} width={160} height={160} />
+                      <figcaption className="mt-1 text-[11px] text-muted">
+                        Scan to pay {m.meta.qr.invoiceNumber}
+                        {m.meta.qr.payerViewUrl && m.meta.qr.via === "paypal-agent-toolkit" ? (
+                          <>
+                            {" · "}
+                            <a className="underline" href={m.meta.qr.payerViewUrl} target="_blank" rel="noreferrer">
+                              open
+                            </a>
+                          </>
+                        ) : null}
+                      </figcaption>
+                    </figure>
+                  )}
                   {m.meta && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-2">
                       <EngineBadge engine={m.meta.engine} />

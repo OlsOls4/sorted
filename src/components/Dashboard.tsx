@@ -19,8 +19,8 @@ import { useSorted } from "./useSorted";
 
 export function Dashboard() {
   const c = useSorted();
-  const [editing, setEditing] = useState<{ draft: InvoiceDraft; engine?: EngineInfo; aiError?: string } | null>(null);
-  const [reminding, setReminding] = useState<{ inv: Invoice; preset?: { stage: ReminderStage; subject: string; body: string } } | null>(null);
+  const [editing, setEditing] = useState<{ draft: InvoiceDraft; engine?: EngineInfo; aiError?: string; approval?: string } | null>(null);
+  const [reminding, setReminding] = useState<{ inv: Invoice; preset?: { stage: ReminderStage; subject: string; body: string }; approval?: string } | null>(null);
   const [confirmPaid, setConfirmPaid] = useState<Invoice | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
@@ -36,7 +36,7 @@ export function Dashboard() {
   const onConfirmAction = useCallback(
     async (a: PendingAction): Promise<boolean> => {
       if (a.type === "create_invoice") {
-        setEditing({ draft: a.draft });
+        setEditing({ draft: a.draft, approval: a.approvalToken });
         return true;
       }
       const inv = c.invoices.find((i) => i.id === a.invoiceId);
@@ -45,11 +45,11 @@ export function Dashboard() {
         return false;
       }
       if (a.type === "send_reminder") {
-        setReminding({ inv, preset: { stage: a.stage, subject: a.subject, body: a.body } });
+        setReminding({ inv, preset: { stage: a.stage, subject: a.subject, body: a.body }, approval: a.approvalToken });
         return true;
       }
       try {
-        await c.markPaid(inv);
+        await c.markPaid(inv, a.approvalToken);
         return true;
       } catch (e) {
         toast("err", (e as Error).message);
@@ -163,7 +163,10 @@ export function Dashboard() {
           mode={c.mode}
           onClose={() => setEditing(null)}
           onSend={async (d) => {
-            await c.createInvoice(d);
+            // Approvals are single-use: a retry after an error mints a fresh one.
+            const t = editing.approval;
+            setEditing((e) => (e ? { ...e, approval: undefined } : e));
+            await c.createInvoice(d, t);
             setEditing(null);
           }}
         />
@@ -175,7 +178,11 @@ export function Dashboard() {
           settings={c.settings}
           mode={c.mode}
           onClose={() => setReminding(null)}
-          onSend={c.sendReminder}
+          onSend={(inv, subject, body, stage) => {
+            const t = reminding.approval;
+            setReminding((r) => (r ? { ...r, approval: undefined } : r));
+            return c.sendReminder(inv, subject, body, stage, t);
+          }}
         />
       )}
       {confirmPaid && (

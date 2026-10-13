@@ -1,5 +1,6 @@
 import { asLedger, readJSON, sanitizeSettings } from "@/lib/api";
 import { errorResponse, getBackend, resolveContext, validateDraft } from "@/lib/backend";
+import { requireApproval } from "@/lib/approval";
 import { liveWriteGuard } from "@/lib/guard";
 import type { InvoiceDraft } from "@/lib/types";
 
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
   if (!draft || typeof draft !== "object") return Response.json({ error: "Missing invoice draft." }, { status: 400 });
   const errors = validateDraft(draft);
   if (errors.length) return Response.json({ error: errors.join(" "), errors }, { status: 422 });
+  const unapproved = requireApproval(body.approval, "create_invoice", "new", mode);
+  if (unapproved) return unapproved;
   const blocked = liveWriteGuard(req, rc, [draft.customerEmail]);
   if (blocked) return blocked;
   try {

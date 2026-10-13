@@ -9,6 +9,11 @@ import { customerSummaries, earnedBetween, overdueInvoices, STAGE_LABEL, totals 
 import { parseJobNotes } from "../parser";
 import { templateReminder } from "../reminders";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, ReminderStage, Settings, ToolTraceEntry } from "../types";
+import { issueApproval } from "../approval";
+import { isSandbox, type PayPalConfig, type PayPalInvoice } from "../paypal/client";
+import { payPalToInvoice } from "../paypal/mapping";
+import { runToolkitTool } from "../paypal/toolkit";
+import { qrDataUrl, qrFromToolkitOutput } from "../qr";
 import { parseNotes } from "./parse";
 import { RULES_ENGINE, fallbackEngine, friendlyAIError, getLLM, type LLMMessage, type LLMRouter, type ToolSpec } from "./provider";
 import { draftReminder } from "./remind";
@@ -18,65 +23,82 @@ export interface AgentContext {
   settings: Settings;
   mode: Mode;
   ledgerVia: ToolTraceEntry["via"];
+  /** Live mode: the PayPal app the Agent Toolkit tools run against. */
+  cfg?: PayPalConfig | null;
 }
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
 // ---------------- Tools ----------------
 
+// In live mode the PayPal tools (list_invoices, get_invoice, generate_invoice_qr_code,
+// send_invoice_reminder, create_invoice) are PayPal Agent Toolkit tools executed
+// through @paypal/agent-toolkit. Reads run straight away; writes never run here:
+// they come back as a "Needs your OK" card with a server-signed approval token,
+// and the write route verifies that token. Demo mode mirrors the same tools with
+// mock PayPal. Schemas are kept compact (Groq free-tier token limits); the
+// toolkit's own create_invoice schema is ~10 KB, so create_invoice takes job
+// notes and Sorted's UK VAT mapping builds the PayPal payload on confirm.
+const INVOICE_REF = {
+  invoice_id: { type: "string", description: "PayPal invoice id (INV2-...) or invoice number (INV-1004)" },
+  customer: { type: "string", description: "Customer name, if no invoice id" },
+};
+
 export const TOOLS: ToolSpec[] = [
   {
     name: "get_ledger_summary",
-    description: "Totals across the whole ledger: outstanding, overdue, billed and received this month, average days to get paid, plus a per-customer breakdown.",
+    description: "Totals across the ledger: outstanding, overdue, billed and received this month, average days to pay, per-customer breakdown.",
     parameters: { type: "object", properties: {} },
   },
   {
     name: "list_invoices",
-    description: "List invoices (from PayPal in live mode). Filter by status and/or customer name/email substring.",
+    description: "PayPal Agent Toolkit list_invoices. Optional filters: status and customer name/email.",
     parameters: {
       type: "object",
       properties: {
-        status: { type: "string", enum: ["all", "outstanding", "overdue", "paid"], description: "Which invoices to return" },
-        customer: { type: "string", description: "Optional customer name or email to match" },
+        status: { type: "string", enum: ["all", "outstanding", "overdue", "paid"] },
+        customer: { type: "string" },
       },
     },
+  },
+  {
+    name: "get_invoice",
+    description: "PayPal Agent Toolkit get_invoice: one invoice's details, status and the customer's PayPal pay link.",
+    parameters: { type: "object", properties: INVOICE_REF },
   },
   {
     name: "get_earnings",
-    description: "Money received (by paid date) and amount billed (by issue date) between two dates inclusive. Dates are YYYY-MM-DD.",
-    parameters: {
-      type: "object",
-      properties: { from: { type: "string" }, to: { type: "string" } },
-      required: ["from", "to"],
-    },
+    description: "Money received (by paid date) and billed (by issue date) between two dates inclusive (YYYY-MM-DD).",
+    parameters: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } }, required: ["from", "to"] },
   },
   {
     name: "rank_payers",
-    description: "Rank customers by how late they pay (average days late, current overdue). Use for 'slowest/latest/worst payer' or 'best payer' questions.",
+    description: "Rank customers by how late they pay. Use for slowest/latest/worst or best payer questions.",
     parameters: { type: "object", properties: {} },
   },
   {
-    name: "draft_payment_reminder",
+    name: "generate_invoice_qr_code",
+    description: "PayPal Agent Toolkit generate_invoice_qr_code: a QR code the customer scans to pay. It is shown to the user in the chat.",
+    parameters: { type: "object", properties: INVOICE_REF },
+  },
+  {
+    name: "send_invoice_reminder",
     description:
-      "Draft a reminder email for an unpaid invoice with escalating tone (nudge, firm, final). Does NOT send — the user must confirm in the app. Provide invoice_id, or customer to pick their most overdue invoice.",
+      "PayPal Agent Toolkit send_invoice_reminder for an unpaid invoice. Not sent until the user taps OK: Sorted drafts the email (nudge, firm or final, with the pay link) for review.",
     parameters: {
       type: "object",
-      properties: {
-        invoice_id: { type: "string" },
-        customer: { type: "string" },
-        stage: { type: "string", enum: ["nudge", "firm", "final"], description: "Omit to let Sorted choose based on lateness" },
-      },
+      properties: { ...INVOICE_REF, stage: { type: "string", enum: ["nudge", "firm", "final"], description: "Omit to choose by lateness" } },
     },
   },
   {
-    name: "create_invoice_draft",
-    description: "Turn job notes into an invoice draft for the user to review and send via PayPal. Does NOT send.",
+    name: "create_invoice",
+    description: "PayPal Agent Toolkit create_invoice + send_invoice from job notes. Not sent until the user reviews the invoice and taps OK.",
     parameters: { type: "object", properties: { notes: { type: "string" } }, required: ["notes"] },
   },
   {
     name: "propose_mark_paid",
-    description: "Propose marking an invoice as paid (e.g. customer paid cash/bank transfer). Does NOT change anything until the user confirms.",
-    parameters: { type: "object", properties: { invoice_id: { type: "string" }, customer: { type: "string" } } },
+    description: "Propose recording a cash/bank payment against an invoice. Nothing changes until the user taps OK.",
+    parameters: { type: "object", properties: INVOICE_REF },
   },
 ];
 
@@ -105,7 +127,7 @@ function matchCustomer(inv: Invoice, q: string) {
   return inv.customerName.toLowerCase().includes(s) || inv.customerEmail.toLowerCase().includes(s);
 }
 
-function findTarget(ledger: Invoice[], args: { invoice_id?: unknown; customer?: unknown }, today: string): Invoice | undefined {
+function findTarget(ledger: Invoice[], args: { invoice_id?: unknown; customer?: unknown }, today: string, anyStatus = false): Invoice | undefined {
   const id = typeof args.invoice_id === "string" ? args.invoice_id.trim() : "";
   if (id) {
     const hit = ledger.find((i) => i.id === id || i.number.toLowerCase() === id.toLowerCase());
@@ -114,7 +136,9 @@ function findTarget(ledger: Invoice[], args: { invoice_id?: unknown; customer?: 
   const cust = typeof args.customer === "string" ? args.customer : "";
   if (cust) {
     const open = ledger.filter((i) => isOpen(i) && balance(i) > 0 && matchCustomer(i, cust));
-    return open.sort((a, b) => daysOverdue(b, today) - daysOverdue(a, today))[0];
+    const hit = open.sort((a, b) => daysOverdue(b, today) - daysOverdue(a, today))[0];
+    if (hit || !anyStatus) return hit;
+    return ledger.filter((i) => matchCustomer(i, cust)).sort((a, b) => b.issueDate.localeCompare(a.issueDate))[0];
   }
   return undefined;
 }
@@ -123,6 +147,27 @@ interface ToolOutcome {
   result: unknown;
   trace: ToolTraceEntry;
   pending?: PendingAction;
+  qr?: ChatResponse["qr"];
+}
+
+const live = (ctx: AgentContext) => ctx.mode === "live" && !!ctx.cfg;
+const paypalVia = (ctx: AgentContext): ToolTraceEntry["via"] => (live(ctx) ? "paypal-agent-toolkit" : "mock-paypal");
+
+function withApproval<T extends PendingAction>(p: T, ctx: AgentContext): T {
+  const id = p.type === "create_invoice" ? "new" : p.invoiceId;
+  const action = p.type === "create_invoice" ? "create_invoice" : p.type === "send_reminder" ? "send_reminder" : "mark_paid";
+  return { ...p, approvalToken: issueApproval(action, id, ctx.mode).token };
+}
+
+/** Live: fresh invoice list from the Agent Toolkit, merged with the hydrated ledger for line items/VAT. */
+async function toolkitList(ctx: AgentContext): Promise<Invoice[]> {
+  const res = (await runToolkitTool(ctx.cfg!, "list_invoices", { page: 1, page_size: 100, total_required: true })) as { items?: PayPalInvoice[] };
+  const known = new Map(ctx.ledger.map((i) => [i.id, i]));
+  return (res.items ?? []).map((p) => {
+    const fresh = payPalToInvoice(p, isSandbox(ctx.cfg!));
+    const k = known.get(p.id);
+    return k ? { ...k, status: fresh.status, amountPaid: Math.max(k.amountPaid, fresh.amountPaid), paidDate: fresh.paidDate ?? k.paidDate } : fresh;
+  });
 }
 
 async function runTool(name: string, args: Record<string, unknown>, ctx: AgentContext, useAI: boolean): Promise<ToolOutcome> {
@@ -139,14 +184,54 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
     }
     case "list_invoices": {
       const status = String(args.status ?? "all");
-      let rows = ledger.filter((i) => i.status !== "CANCELLED");
+      let source = ledger;
+      let via = ctx.ledgerVia;
+      let note = "";
+      if (live(ctx)) {
+        try {
+          source = await toolkitList(ctx);
+          via = "paypal-agent-toolkit";
+        } catch (e) {
+          note = ` (toolkit unavailable: ${(e as Error).message.slice(0, 60)})`;
+        }
+      }
+      let rows = source.filter((i) => i.status !== "CANCELLED");
       if (status === "outstanding") rows = rows.filter((i) => balance(i) > 0);
       if (status === "overdue") rows = overdueInvoices(rows, today);
       if (status === "paid") rows = rows.filter((i) => i.status === "PAID" || i.status === "MARKED_AS_PAID");
       if (typeof args.customer === "string" && args.customer) rows = rows.filter((i) => matchCustomer(i, args.customer as string));
       return {
         result: rows.slice(0, 40).map((i) => brief(i, today)),
-        trace: { tool: name, args, summary: `${rows.length} ${status} invoice${rows.length === 1 ? "" : "s"}`, via: ctx.ledgerVia },
+        trace: { tool: name, args, summary: `${rows.length} ${status} invoice${rows.length === 1 ? "" : "s"}${note}`, via },
+      };
+    }
+    case "get_invoice": {
+      const target = findTarget(ledger, args, today, true);
+      if (!target) return { result: { error: "No matching invoice found." }, trace: { tool: name, args, summary: "no match", via: paypalVia(ctx) } };
+      let inv = target;
+      if (live(ctx)) {
+        const p = (await runToolkitTool(ctx.cfg!, "get_invoice", { invoice_id: target.id })) as PayPalInvoice;
+        inv = { ...payPalToInvoice(p, isSandbox(ctx.cfg!)), reminders: target.reminders };
+      }
+      return {
+        result: { ...brief(inv, today), payLink: inv.payerViewUrl ?? null, items: inv.items.map((li) => `${li.description}: ${li.quantity} x ${gbp(li.unitAmount)}`), vat: inv.vat },
+        trace: { tool: name, args, summary: `${inv.number} ${inv.status}`, via: paypalVia(ctx) },
+      };
+    }
+    case "generate_invoice_qr_code": {
+      const inv = findTarget(ledger, args, today, true);
+      if (!inv) return { result: { error: "No matching invoice found." }, trace: { tool: name, args, summary: "no match", via: paypalVia(ctx) } };
+      let dataUrl: string;
+      if (live(ctx)) {
+        const out = await runToolkitTool(ctx.cfg!, "generate_invoice_qr_code", { invoice_id: inv.id, width: 240, height: 240 });
+        dataUrl = qrFromToolkitOutput(out);
+      } else {
+        dataUrl = await qrDataUrl(inv.payerViewUrl ?? inv.id);
+      }
+      return {
+        result: { generated: true, shownToUser: true, invoice: inv.number, customer: inv.customerName, payLink: inv.payerViewUrl ?? null },
+        trace: { tool: name, args, summary: `QR code for ${inv.number}`, via: paypalVia(ctx) },
+        qr: { invoiceId: inv.id, invoiceNumber: inv.number, dataUrl, payerViewUrl: inv.payerViewUrl, via: paypalVia(ctx) },
       };
     }
     case "get_earnings": {
@@ -161,7 +246,7 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
         .sort((a, b) => (b.avgDaysLate ?? 0) + b.maxDaysOverdue - ((a.avgDaysLate ?? 0) + a.maxDaysOverdue));
       return { result: ranked, trace: { tool: name, args, summary: `ranked ${ranked.length} customers`, via: "ledger" } };
     }
-    case "draft_payment_reminder": {
+    case "send_invoice_reminder": {
       const inv = findTarget(ledger, args, today);
       if (!inv) return { result: { error: "No matching unpaid invoice found." }, trace: { tool: name, args, summary: "no match", via: "ledger" } };
       const stage = (["nudge", "firm", "final"].includes(String(args.stage)) ? args.stage : undefined) as ReminderStage | undefined;
@@ -177,17 +262,17 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
       };
       return {
         result: { drafted: true, awaitingUserConfirmation: true, invoice: brief(inv, today), stage: draft.stage, subject: draft.subject },
-        trace: { tool: name, args, summary: `${STAGE_LABEL[draft.stage]} for ${inv.number}`, via: "ledger" },
-        pending,
+        trace: { tool: name, args, summary: `${STAGE_LABEL[draft.stage]} for ${inv.number} (awaiting OK)`, via: paypalVia(ctx) },
+        pending: withApproval(pending, ctx),
       };
     }
-    case "create_invoice_draft": {
+    case "create_invoice": {
       const notes = String(args.notes ?? "");
       const draft = useAI ? (await parseNotes(notes, settings)).draft : parseJobNotes(notes, settings, today).draft;
       return {
         result: { drafted: true, awaitingUserConfirmation: true, customer: draft.customerName, email: draft.customerEmail, items: draft.items, warnings: draft.warnings },
-        trace: { tool: name, args: { notes: notes.slice(0, 80) }, summary: `draft for ${draft.customerName || "unknown customer"}`, via: "ledger" },
-        pending: { type: "create_invoice", draft },
+        trace: { tool: name, args: { notes: notes.slice(0, 80) }, summary: `draft for ${draft.customerName || "unknown customer"} (awaiting OK)`, via: paypalVia(ctx) },
+        pending: withApproval({ type: "create_invoice", draft }, ctx),
       };
     }
     case "propose_mark_paid": {
@@ -196,7 +281,7 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
       return {
         result: { proposed: true, awaitingUserConfirmation: true, invoice: brief(inv, today) },
         trace: { tool: name, args, summary: `mark ${inv.number} paid?`, via: "ledger" },
-        pending: { type: "mark_paid", invoiceId: inv.id, invoiceNumber: inv.number, customerName: inv.customerName, amount: balance(inv) },
+        pending: withApproval({ type: "mark_paid", invoiceId: inv.id, invoiceNumber: inv.number, customerName: inv.customerName, amount: balance(inv) }, ctx),
       };
     }
     default:
@@ -211,7 +296,7 @@ function systemPrompt(ctx: AgentContext) {
   return `You are the Sorted assistant, a friendly, sharp money assistant for a UK sole trader: ${ctx.settings.traderName} of ${ctx.settings.businessName}.
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
 Always use tools to get numbers — never guess figures. "Latest payer" means the customer who pays latest/slowest.
-For any action that sends something to a customer or changes an invoice (reminders, new invoices, marking paid) call the matching draft/propose tool; it will NOT happen until the user taps Confirm in the app, so tell them to review and confirm.
+For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps OK in the app, so tell them to review and confirm.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
 }
 
@@ -237,18 +322,25 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
   const convo: LLMMessage[] = messages.slice(-12).map((m) => ({ role: m.role, content: m.content }));
   const trace: ToolTraceEntry[] = [];
   let pending: PendingAction | undefined;
+  let qr: ChatResponse["qr"];
   let engine = llm.info ?? RULES_ENGINE;
   for (let step = 0; step < 3; step++) {
     const res = await llm.chat({ system: systemPrompt(ctx), messages: convo, tools: TOOLS, maxTokens: 900 });
     engine = res.engine;
     if (!res.toolCalls.length) {
-      return { reply: res.text.trim() || "Done.", engine, toolTrace: trace, pendingAction: pending };
+      return { reply: res.text.trim() || "Done.", engine, toolTrace: trace, pendingAction: pending, qr };
     }
     convo.push({ role: "assistant", content: res.text, toolCalls: res.toolCalls });
     for (const call of res.toolCalls) {
-      const out = await runTool(call.name, call.args, ctx, false);
+      let out: ToolOutcome;
+      try {
+        out = await runTool(call.name, call.args, ctx, false);
+      } catch (e) {
+        out = { result: { error: (e as Error).message.slice(0, 300) }, trace: { tool: call.name, args: call.args, summary: `failed: ${(e as Error).message.slice(0, 80)}`, via: paypalVia(ctx) } };
+      }
       trace.push(out.trace);
       if (out.pending) pending = out.pending;
+      if (out.qr) qr = out.qr;
       convo.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(out.result).slice(0, 6000) });
     }
     if (pending) {
@@ -260,10 +352,15 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
             ? `I've drafted an invoice for ${pending.draft.customerName || "the customer"}.`
             : `Ready to mark ${pending.invoiceNumber} (${pending.customerName}) as paid.`;
       const reply = `${lead ? `${lead}\n\n` : ""}${what} Review it below and tap Confirm when you're happy. Nothing happens until you do.`;
-      return { reply, engine, toolTrace: trace, pendingAction: pending };
+      return { reply, engine, toolTrace: trace, pendingAction: pending, qr };
+    }
+    if (qr) {
+      // Frugal: no second model call just to say "here it is".
+      const lead = res.text.trim();
+      return { reply: `${lead ? `${lead}\n\n` : ""}Here's the PayPal QR code for **${qr.invoiceNumber}**. Your customer scans it to open the invoice and pay.`, engine, toolTrace: trace, qr };
     }
   }
-  return { reply: "I've gathered what I can — see the details above.", engine, toolTrace: trace, pendingAction: pending };
+  return { reply: "I've gathered what I can — see the details above.", engine, toolTrace: trace, pendingAction: pending, qr };
 }
 
 // ---------------- Deterministic rules agent ----------------
@@ -331,10 +428,22 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
   const respond = (reply: string, pendingAction?: PendingAction): ChatResponse => ({ reply, engine: RULES_ENGINE, toolTrace: trace, pendingAction });
   const who = customerMentioned(q, ctx.ledger);
 
+  // 0) QR code for an invoice
+  if (/\bqr\b|\bscan\b/.test(q)) {
+    const target = who ?? overdueInvoices(ctx.ledger, today)[0]?.customerName;
+    try {
+      const out = await call("generate_invoice_qr_code", { customer: target ?? "" });
+      if (!out.qr) return respond(`I couldn't find an invoice${target ? ` for ${target}` : ""} to make a QR code for.`);
+      return { ...respond(`Here's the PayPal QR code for **${out.qr.invoiceNumber}** (${target}). Your customer scans it to open the invoice and pay.`), qr: out.qr };
+    } catch (e) {
+      return respond(`PayPal couldn't make the QR code just now: ${(e as Error).message}`);
+    }
+  }
+
   // 1) New invoice from notes
   if (/\b(invoice|bill)\b/.test(q) && (/£\s?\d|\d\s*(hrs?|hours?)\b|@/.test(q)) && !/\b(remind|chase|overdue|owe)\b/.test(q)) {
     const notes = raw.replace(/^\s*(please\s+)?(create|make|raise|send|draft)?\s*(an?\s+)?(invoice|bill)\s*(for|:)?\s*/i, "");
-    const out = await call("create_invoice_draft", { notes });
+    const out = await call("create_invoice", { notes });
     const d = (out.pending as Extract<PendingAction, { type: "create_invoice" }>).draft;
     const total = d.items.reduce((s, li) => s + li.quantity * li.unitAmount, 0) * (d.vatEnabled ? 1 + d.vatRate / 100 : 1);
     return respond(
@@ -353,7 +462,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
       target = od?.customerName;
     }
     const stage = /\bfinal\b/.test(q) ? "final" : /\bfirm\b|\bstern\b/.test(q) ? "firm" : /\bfriendly|gentle|nudge\b/.test(q) ? "nudge" : undefined;
-    const out = await call("draft_payment_reminder", { customer: target, ...(stage ? { stage } : {}) });
+    const out = await call("send_invoice_reminder", { customer: target, ...(stage ? { stage } : {}) });
     if (!out.pending) return respond(`I couldn't find an unpaid invoice${target ? ` for ${target}` : ""} to chase. 🎉`);
     const p = out.pending as Extract<PendingAction, { type: "send_reminder" }>;
     return respond(

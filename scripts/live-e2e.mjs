@@ -12,7 +12,20 @@ const ok = (cond, label, extra = "") => {
   console.log(`${cond ? "PASS" : "FAIL"}  ${label}${extra ? `  — ${extra}` : ""}`);
   if (!cond) failures++;
 };
+
+// Write routes need a server-signed approval (what the UI's confirm button mints).
+function approvalFor(path) {
+  if (path === "/api/invoices") return ["create_invoice", "new"];
+  const m = path.match(/^\/api\/invoices\/([^/]+)\/(remind|mark-paid|cancel)$/);
+  if (!m) return null;
+  return [{ remind: "send_reminder", "mark-paid": "mark_paid", cancel: "cancel_invoice" }[m[2]], decodeURIComponent(m[1])];
+}
 async function call(path, body, method) {
+  const appr = body && !("approval" in body) && (method ?? "POST") === "POST" ? approvalFor(path) : null;
+  if (appr) {
+    const r = await fetch(BASE + "/api/approvals", { method: "POST", headers: H, body: JSON.stringify({ action: appr[0], invoiceId: appr[1] }) });
+    body = { ...body, approval: (await r.json()).token };
+  }
   const res = await fetch(BASE + path, { method: method ?? (body ? "POST" : "GET"), headers: H, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
   return { status: res.status, data };

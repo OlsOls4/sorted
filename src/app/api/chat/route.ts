@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     ledger = l.length ? l : seedInvoices(settings.hourlyRate);
     ledgerVia = "mock-paypal";
   }
-  const ctx: AgentContext = { ledger, settings, mode, ledgerVia };
+  const ctx: AgentContext = { ledger, settings, mode, ledgerVia, cfg: mode === "live" ? rc.cfg : null };
   const res = await runAgent(messages, ctx);
   res.toolTrace = [...preTrace, ...res.toolTrace];
   return Response.json({ mode, ...res });

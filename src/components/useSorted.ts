@@ -155,39 +155,50 @@ export function useSorted() {
     [mode],
   );
 
+  /** A signed approval for one write, minted at the moment the user confirms. */
+  const approve = useCallback(
+    async (action: "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice", invoiceId: string) =>
+      (await api<{ token: string }>("/api/approvals", mode, { action, invoiceId })).token,
+    [mode],
+  );
+
   const createInvoice = useCallback(
-    async (draft: InvoiceDraft) => {
-      const res = await api<{ invoice: Invoice; via: string }>("/api/invoices", mode, { draft, settings, ledger: invoices });
+    async (draft: InvoiceDraft, approval?: string) => {
+      const token = approval ?? (await approve("create_invoice", "new"));
+      const res = await api<{ invoice: Invoice; via: string }>("/api/invoices", mode, { draft, settings, ledger: invoices, approval: token });
       upsert(res.invoice);
       toast("ok", `Invoice ${res.invoice.number} sent to ${res.invoice.customerEmail} via ${mode === "demo" ? "mock PayPal" : "PayPal"}.`);
       return res.invoice;
     },
-    [mode, settings, invoices, upsert, toast],
+    [mode, settings, invoices, upsert, toast, approve],
   );
 
   const sendReminder = useCallback(
-    async (inv: Invoice, subject: string, body: string, stage?: ReminderStage) => {
+    async (inv: Invoice, subject: string, body: string, stage?: ReminderStage, approval?: string) => {
+      const token = approval ?? (await approve("send_reminder", inv.id));
       const res = await api<{ invoice: Invoice; via: string }>(`/api/invoices/${encodeURIComponent(inv.id)}/remind`, mode, {
         invoice: inv,
         subject,
         body,
         stage,
+        approval: token,
       });
       upsert(res.invoice);
       toast("ok", `Reminder sent to ${inv.customerName} via ${res.via === "paypal-agent-toolkit" ? "PayPal Agent Toolkit" : res.via === "mock-paypal" ? "mock PayPal" : "PayPal"}.`);
       return res.invoice;
     },
-    [mode, upsert, toast],
+    [mode, upsert, toast, approve],
   );
 
   const markPaid = useCallback(
-    async (inv: Invoice) => {
-      const res = await api<{ invoice: Invoice }>(`/api/invoices/${encodeURIComponent(inv.id)}/mark-paid`, mode, { invoice: inv });
+    async (inv: Invoice, approval?: string) => {
+      const token = approval ?? (await approve("mark_paid", inv.id));
+      const res = await api<{ invoice: Invoice }>(`/api/invoices/${encodeURIComponent(inv.id)}/mark-paid`, mode, { invoice: inv, approval: token });
       upsert(res.invoice);
       toast("ok", `${inv.number} marked as paid.`);
       return res.invoice;
     },
-    [mode, upsert, toast],
+    [mode, upsert, toast, approve],
   );
 
   /** Verify pasted sandbox creds, store them in this browser, and switch to live. */
