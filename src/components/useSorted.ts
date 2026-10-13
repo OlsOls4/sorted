@@ -252,6 +252,7 @@ export function useSorted() {
   // Live mode: pick up verified webhook events quickly, and re-sync the ledger every
   // minute while the tab is visible so a payment made on PayPal shows up on its own.
   const eventSeq = useRef(0);
+  const loadedAt = useRef(Date.now());
   useEffect(() => {
     if (mode !== "live" || !ready) return;
     let n = 0;
@@ -262,7 +263,10 @@ export function useSorted() {
         try {
           const r = await api<{ events: PaymentEvent[]; seq: number }>(`/api/paypal/events?since=${eventSeq.current}`, "live");
           eventSeq.current = r.seq;
-          if (r.events.length) reportEvents(r.events);
+          // Only events for invoices in this ledger that happened since the page loaded: the server keeps a
+          // short in-memory history, and replaying it on load would announce old (or reset-sandbox) payments.
+          const live = r.events.filter((e) => Date.parse(e.at) >= loadedAt.current - 120_000 && invoicesRef.current.some((i) => i.id === e.invoiceId));
+          if (live.length) reportEvents(live);
         } catch {
           /* best effort */
         }
