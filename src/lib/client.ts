@@ -86,12 +86,20 @@ export async function api<T>(path: string, mode: Mode, body?: unknown, method?: 
     headers["x-paypal-client-id"] = creds.clientId;
     headers["x-paypal-client-secret"] = creds.clientSecret;
   }
-  const res = await fetch(path, {
-    method: method ?? (body === undefined ? "GET" : "POST"),
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: method ?? (body === undefined ? "GET" : "POST"),
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError("Couldn't reach Sorted's server. Check your connection and try again.");
+  }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string; paypalDebugId?: string; hint?: string };
-  if (!res.ok) throw new ApiError(data.error ?? `Request failed (${res.status})`, data.paypalDebugId, data.hint);
+  if (!res.ok) {
+    const fallback = res.status >= 500 ? `Sorted's server hit a problem (${res.status}). Please try again.` : `Request failed (${res.status})`;
+    throw new ApiError(data.error ?? fallback, data.paypalDebugId, data.hint);
+  }
   return data;
 }

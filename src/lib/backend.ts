@@ -3,12 +3,12 @@
 // in localStorage and sends the relevant invoice(s) with each mutating request.
 
 import "server-only";
-import { computeTotals, isoTimestamp, round2, todayISO } from "./format";
+import { computeTotals, isOpen, isoTimestamp, round2, todayISO } from "./format";
 import { PayPalClient, PayPalError, hasIssue, isSandbox, paypalConfigFromEnv, paypalConfigFromHeaders, type PayPalConfig } from "./paypal/client";
 import { draftToPayPal, payPalToInvoice } from "./paypal/mapping";
 import { runToolkitTool } from "./paypal/toolkit";
 import { seedInvoices } from "./seed";
-import type { Invoice, InvoiceDraft, Mode, Settings } from "./types";
+import type { Invoice, InvoiceDraft, Mode, ReminderStage, Settings } from "./types";
 
 export interface BackendResult<T> {
   data: T;
@@ -19,7 +19,7 @@ export interface InvoiceBackend {
   mode: Mode;
   createAndSend(draft: InvoiceDraft, settings: Settings, existing?: Invoice[]): Promise<BackendResult<Invoice>>;
   list(clientLedger?: Invoice[]): Promise<BackendResult<Invoice[]>>;
-  remind(invoice: Invoice | string, subject: string, note: string): Promise<BackendResult<Invoice | null>>;
+  remind(invoice: Invoice | string, subject: string, note: string, stage?: ReminderStage): Promise<BackendResult<Invoice | null>>;
   markPaid(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
 }
 
@@ -89,17 +89,19 @@ class MockBackend implements InvoiceBackend {
     return { data: clientLedger && clientLedger.length ? clientLedger : seedInvoices(), via: "mock-paypal" as const };
   }
 
-  async remind(invoice: Invoice | string, subject: string) {
+  async remind(invoice: Invoice | string, subject: string, _note: string, stage?: ReminderStage) {
     if (typeof invoice === "string") return { data: null, via: "mock-paypal" as const };
+    if (!isOpen(invoice)) throw new PayPalError(`${invoice.number} is ${invoice.status === "CANCELLED" ? "cancelled" : "already paid"}, so there's nothing to chase.`, 422);
     const updated: Invoice = {
       ...invoice,
-      reminders: [...invoice.reminders, { sentAt: isoTimestamp(), stage: stageFor(invoice), subject }],
+      reminders: [...invoice.reminders, { sentAt: isoTimestamp(), stage: stage ?? stageFor(invoice), subject }],
     };
     return { data: updated, via: "mock-paypal" as const };
   }
 
   async markPaid(invoice: Invoice | string) {
     if (typeof invoice === "string") return { data: null, via: "mock-paypal" as const };
+    if (!isOpen(invoice)) throw new PayPalError(`${invoice.number} is ${invoice.status === "CANCELLED" ? "cancelled" : "already paid"}.`, 422);
     return {
       data: { ...invoice, status: "MARKED_AS_PAID" as const, amountPaid: invoice.total, paidDate: todayISO() },
       via: "mock-paypal" as const,
@@ -154,7 +156,7 @@ class PayPalBackend implements InvoiceBackend {
   }
 
   /** Reminders go through PayPal's Agent Toolkit tool, falling back to direct REST. */
-  async remind(invoice: Invoice | string, subject: string, note: string) {
+  async remind(invoice: Invoice | string, subject: string, note: string, stage?: ReminderStage) {
     const id = typeof invoice === "string" ? invoice : invoice.id;
     let via: "paypal-agent-toolkit" | "paypal-rest" = "paypal-agent-toolkit";
     try {
@@ -169,7 +171,7 @@ class PayPalBackend implements InvoiceBackend {
     const fresh = await this.client.getInvoice(id);
     const inv = payPalToInvoice(fresh, isSandbox(this.cfg));
     const prior = typeof invoice === "string" ? [] : invoice.reminders;
-    inv.reminders = [...prior, { sentAt: isoTimestamp(), stage: stageFor({ ...inv, reminders: prior }), subject }];
+    inv.reminders = [...prior, { sentAt: isoTimestamp(), stage: stage ?? stageFor({ ...inv, reminders: prior }), subject }];
     return { data: inv, via };
   }
 

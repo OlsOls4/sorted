@@ -7,6 +7,8 @@ import { suggestStage } from "@/lib/ledger";
 import type { EngineInfo, Invoice, Mode, ReminderDraft, ReminderStage, Settings } from "@/lib/types";
 import { EngineBadge, Modal, PayPalMark, Spinner, StageBadge } from "./ui";
 
+const s_label = (s: ReminderStage) => (s === "nudge" ? "friendly nudge" : s === "firm" ? "firm reminder" : "final notice");
+
 export function ReminderModal({
   invoice,
   settings,
@@ -20,7 +22,7 @@ export function ReminderModal({
   mode: Mode;
   preset?: { stage: ReminderStage; subject: string; body: string };
   onClose: () => void;
-  onSend: (inv: Invoice, subject: string, body: string) => Promise<unknown>;
+  onSend: (inv: Invoice, subject: string, body: string, stage: ReminderStage) => Promise<unknown>;
 }) {
   const [stage, setStage] = useState<ReminderStage>(preset?.stage ?? suggestStage(invoice));
   const [subject, setSubject] = useState(preset?.subject ?? "");
@@ -70,7 +72,7 @@ export function ReminderModal({
     setSending(true);
     setError(null);
     try {
-      await onSend(invoice, subject, body);
+      await onSend(invoice, subject, body, stage);
       onClose();
     } catch (e) {
       setError((e as Error).message);
@@ -80,7 +82,7 @@ export function ReminderModal({
   }
 
   return (
-    <Modal open onClose={onClose} title={`Chase ${invoice.customerName}`} wide>
+    <Modal open onClose={onClose} title={`${daysOverdue(invoice) > 0 ? "Chase" : "Remind"} ${invoice.customerName}`} wide>
       <div className="mb-4 grid grid-cols-3 gap-2 text-center text-sm">
         <div className="rounded-xl bg-paper p-2">
           <div className="text-xs text-muted">Owed</div>
@@ -101,9 +103,12 @@ export function ReminderModal({
         {(["nudge", "firm", "final"] as ReminderStage[]).map((s) => (
           <button
             key={s}
+            type="button"
+            aria-pressed={stage === s}
             disabled={loading}
             className={`flex-1 rounded-lg px-2 py-1.5 font-medium transition ${stage === s ? "bg-ink text-white" : "text-muted hover:text-ink"}`}
             onClick={() => {
+              if (s === stage && !error) return;
               setStage(s);
               load(s);
             }}
@@ -120,13 +125,17 @@ export function ReminderModal({
             written by <EngineBadge engine={engine} />
           </>
         )}
-        {loading && <Spinner className="text-brand" />}
+        {loading && (
+          <span className="inline-flex items-center gap-1.5">
+            <Spinner className="text-brand" /> Writing the {s_label(stage)}…
+          </span>
+        )}
       </div>
 
       <label className="label" htmlFor="rs">Subject</label>
-      <input id="rs" className="input mb-3" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={loading} />
+      <input id="rs" className="input mb-3 disabled:bg-paper" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={loading} placeholder={loading ? "Drafting…" : ""} />
       <label className="label" htmlFor="rb">Message</label>
-      <textarea id="rb" className="input min-h-[260px] font-[inherit] leading-relaxed" value={body} onChange={(e) => setBody(e.target.value)} disabled={loading} />
+      <textarea id="rb" className="input min-h-[260px] font-[inherit] leading-relaxed disabled:bg-paper disabled:text-muted" value={body} onChange={(e) => setBody(e.target.value)} disabled={loading} placeholder={loading ? "Drafting your reminder…" : ""} />
 
       {legal && stage === "final" && (
         <div className={`mt-3 rounded-xl px-3 py-2 text-xs ${legal.applies ? "bg-violet-50 text-violet-800" : "bg-paper text-muted"}`}>
@@ -135,11 +144,20 @@ export function ReminderModal({
         </div>
       )}
 
-      {error && <div className="mt-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">{error}</div>}
+      {error && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad" role="alert">
+          <span>{error}</span>
+          {!subject && !sending && (
+            <button type="button" className="shrink-0 text-xs font-semibold underline" onClick={() => load(stage)}>
+              Try again
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button className="btn-ghost" onClick={onClose}>Not now</button>
-        <button className="btn-paypal" onClick={send} disabled={sending || loading || !subject.trim() || !body.trim()}>
+        <button type="button" className="btn-ghost" onClick={onClose}>Not now</button>
+        <button type="button" className="btn-paypal" onClick={send} disabled={sending || loading || !subject.trim() || !body.trim()}>
           {sending ? <Spinner /> : <PayPalMark />}
           {sending ? "Sending…" : `Send reminder via PayPal${mode === "demo" ? " (demo)" : ""}`}
         </button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, storage, type PayPalCreds } from "@/lib/client";
-import type { EngineInfo, Invoice, InvoiceDraft, Mode, Settings } from "@/lib/types";
+import type { EngineInfo, Invoice, InvoiceDraft, Mode, ReminderStage, Settings } from "@/lib/types";
 import { DEFAULT_SETTINGS } from "@/lib/types";
 
 export interface Status {
@@ -126,11 +126,12 @@ export function useSorted() {
   );
 
   const sendReminder = useCallback(
-    async (inv: Invoice, subject: string, body: string) => {
+    async (inv: Invoice, subject: string, body: string, stage?: ReminderStage) => {
       const res = await api<{ invoice: Invoice; via: string }>(`/api/invoices/${encodeURIComponent(inv.id)}/remind`, mode, {
         invoice: inv,
         subject,
         body,
+        stage,
       });
       upsert(res.invoice);
       toast("ok", `Reminder sent to ${inv.customerName} via ${res.via === "paypal-agent-toolkit" ? "PayPal Agent Toolkit" : res.via === "mock-paypal" ? "mock PayPal" : "PayPal"}.`);
