@@ -44,3 +44,4 @@ tsconfig.tsbuildinfo
 
 # unit test build output
 /.test-build/
+/.eval-build/

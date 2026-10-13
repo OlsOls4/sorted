@@ -1,0 +1,2027 @@
+{
+  "engine": "rules",
+  "startedAt": "2026-10-13T14:32:32.016Z",
+  "url": null,
+  "calls": 0,
+  "results": [
+    {
+      "id": "n01",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Okafor",
+        "customerEmail": "ngozi.okafor@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "Fixed leaking stopcock at 12 Cotham Hill",
+        "items": [
+          {
+            "id": "li_mv6s5w29kq0fw8yi",
+            "kind": "labour",
+            "description": "Labour — Fixed leaking stopcock",
+            "quantity": 2.5,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w29h45rnwts",
+            "kind": "parts",
+            "description": "New valve",
+            "quantity": 1,
+            "unitAmount": 18,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w29t206i5u8",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n02",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Patel",
+        "customerEmail": "j.patel@hotmail.co.uk",
+        "customerType": "consumer",
+        "jobSummary": "Unblocked kitchen sink at 4 Ashley Down Rd",
+        "items": [
+          {
+            "id": "li_mv6s5w2cpgbhe34u",
+            "kind": "labour",
+            "description": "Labour — Unblocked kitchen sink",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n03",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Sarah Jenkins",
+        "customerEmail": "sarah.jenkins@outlook.com",
+        "customerType": "consumer",
+        "jobSummary": "Replaced toilet syphon at 33 Gloucester Rd",
+        "items": [
+          {
+            "id": "li_mv6s5w2e0mtxyz49",
+            "kind": "labour",
+            "description": "Labour — Replaced toilet syphon",
+            "quantity": 1.5,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2earl2ttd0",
+            "kind": "parts",
+            "description": "Syphon",
+            "quantity": 1,
+            "unitAmount": 22.5,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n04",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Harbourside Lettings Ltd",
+        "customerEmail": "accounts@harbourside-lettings.co.uk",
+        "customerType": "business",
+        "jobSummary": "Flat 3 burst pipe under sink",
+        "items": [
+          {
+            "id": "li_mv6s5w2fkpgfy2e1",
+            "kind": "labour",
+            "description": "Labour — Flat 3 burst pipe under sink",
+            "quantity": 2,
+            "unitAmount": 60,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2f8q0gak4w",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 85,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2fujsssboe",
+            "kind": "parts",
+            "description": "Copper fittings",
+            "quantity": 1,
+            "unitAmount": 14,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n05",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs D Wilkins",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Boiler serivce",
+        "items": [
+          {
+            "id": "li_mv6s5w2gs0rcn5hc",
+            "kind": "other",
+            "description": "Boiler serivce",
+            "quantity": 1,
+            "unitAmount": 85,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n06",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Tom",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Fitted new kitchen tap at 9 Raleigh Rd",
+        "items": [
+          {
+            "id": "li_mv6s5w2gi9u7qzf3",
+            "kind": "labour",
+            "description": "Labour — Fitted new kitchen tap",
+            "quantity": 1.25,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n07",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Hughes",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Radiator valves x2",
+        "items": [
+          {
+            "id": "li_mv6s5w2gt442skwo",
+            "kind": "labour",
+            "description": "Labour — Radiator valves x2",
+            "quantity": 2,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2gtbt07vab",
+            "kind": "parts",
+            "description": "Radiator valves",
+            "quantity": 2,
+            "unitAmount": 12,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6s5w2gov67h3yo",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-20",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 7 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n08",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mark Cooper",
+        "customerEmail": "mark.cooper@btinternet.com",
+        "customerType": "consumer",
+        "jobSummary": "Power flushed system for the Coopers",
+        "items": [
+          {
+            "id": "li_mv6s5w2hp0e8hswo",
+            "kind": "labour",
+            "description": "Labour — Power flushed system for the Coopers",
+            "quantity": 6,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n09",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Shower valve replaced",
+        "items": [
+          {
+            "id": "li_mv6s5w2hjg2u7m44",
+            "kind": "labour",
+            "description": "Labour — Shower valve replaced",
+            "quantity": 3,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2hbyqv9nsz",
+            "kind": "parts",
+            "description": "Parts & materials",
+            "quantity": 1,
+            "unitAmount": 65,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": [
+          "Couldn't spot the customer's name.",
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n10",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Manager",
+        "customerEmail": "manager@cliftonvillagecafe.co.uk",
+        "customerType": "business",
+        "jobSummary": "Clifton Village Cafe",
+        "items": [
+          {
+            "id": "li_mv6s5w2hvhecakk4",
+            "kind": "labour",
+            "description": "Labour — Clifton Village Cafe",
+            "quantity": 0.75,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2hj5c2w11n",
+            "kind": "parts",
+            "description": "Washer and jubilee clip",
+            "quantity": 1,
+            "unitAmount": 6,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n11",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr & Mrs Lewis",
+        "customerEmail": "lewisfamily@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "New consumer unit fitted at 14 Redland Grove",
+        "items": [
+          {
+            "id": "li_mv6s5w2i4a5u1ucv",
+            "kind": "labour",
+            "description": "Labour — New consumer unit fitted",
+            "quantity": 7,
+            "unitAmount": 50,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2iaogtt4ib",
+            "kind": "parts",
+            "description": "CU and breakers",
+            "quantity": 1,
+            "unitAmount": 210,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n12",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Jo Bloggs",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Added 2 double sockets in kitchen",
+        "items": [
+          {
+            "id": "li_mv6s5w2iolg3h9ku",
+            "kind": "labour",
+            "description": "Labour — Added 2 double sockets in kitchen",
+            "quantity": 3.5,
+            "unitAmount": 50,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n13",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Bristol Dental Surgery",
+        "customerEmail": "reception@bristoldental.co.uk",
+        "customerType": "business",
+        "jobSummary": "Fault finding tripping RCD",
+        "items": [
+          {
+            "id": "li_mv6s5w2i3yuyhcix",
+            "kind": "labour",
+            "description": "Labour — Fault finding tripping RCD",
+            "quantity": 1.5,
+            "unitAmount": 50,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2izini3oy2",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 60,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2ioa8dou59",
+            "kind": "parts",
+            "description": "Faulty immersion element",
+            "quantity": 1,
+            "unitAmount": 28,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n14",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Avon Properties",
+        "customerEmail": "accounts@avonproperties.co.uk",
+        "customerType": "business",
+        "jobSummary": "Landlord EICR",
+        "items": [
+          {
+            "id": "li_mv6s5w2jtmkcwlvs",
+            "kind": "parts",
+            "description": "Flats",
+            "quantity": 1,
+            "unitAmount": 3,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2jmiw8sn9v",
+            "kind": "parts",
+            "description": "Flats",
+            "quantity": 1,
+            "unitAmount": 120,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-11-12",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 30 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n15",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Khan",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Outdoor light",
+        "items": [
+          {
+            "id": "li_mv6s5w2jc9vtgabj",
+            "kind": "labour",
+            "description": "Labour — Outdoor light",
+            "quantity": 2,
+            "unitAmount": 50,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2ja2czpq7l",
+            "kind": "parts",
+            "description": "Light",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n16",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Dr Ahmed Siddiqui",
+        "customerEmail": "a.siddiqui@icloud.com",
+        "customerType": "consumer",
+        "jobSummary": "EV charger install",
+        "items": [
+          {
+            "id": "li_mv6s5w2jg2pie3ta",
+            "kind": "parts",
+            "description": "Charger supplied",
+            "quantity": 1,
+            "unitAmount": 499,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2jqd8t281a",
+            "kind": "other",
+            "description": "EV charger install",
+            "quantity": 1,
+            "unitAmount": 350,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n17",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Gary",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Swapped 6 downlights to LED",
+        "items": [
+          {
+            "id": "li_mv6s5w2jqgjki2vd",
+            "kind": "labour",
+            "description": "Labour — Swapped 6 downlights to LED",
+            "quantity": 2,
+            "unitAmount": 50,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2jozdx5ij1",
+            "kind": "parts",
+            "description": "Lamps",
+            "quantity": 6,
+            "unitAmount": 8,
+            "unit": "QUANTITY"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Spark Bros Electrical Ltd. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n18",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Bell",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Hung 3 internal doors at 2 Church Lane",
+        "items": [
+          {
+            "id": "li_mv6s5w2kyk73vezi",
+            "kind": "labour",
+            "description": "Labour — Hung 3 internal doors (1 day)",
+            "quantity": 1,
+            "unitAmount": 220,
+            "unit": "QUANTITY"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Oakleaf Joinery. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n19",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Liam",
+        "customerEmail": "liam.oconnor@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "Fitted skirting in lounge",
+        "items": [
+          {
+            "id": "li_mv6s5w2kty085qp0",
+            "kind": "labour",
+            "description": "Labour — Fitted skirting in lounge (2 days)",
+            "quantity": 2,
+            "unitAmount": 200,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6s5w2k5nnp63ri",
+            "kind": "parts",
+            "description": "Timber",
+            "quantity": 1,
+            "unitAmount": 96.4,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Oakleaf Joinery. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n20",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Ferguson",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Built in wardrobe",
+        "items": [
+          {
+            "id": "li_mv6s5w2kewwsqhrk",
+            "kind": "other",
+            "description": "Built in wardrobe",
+            "quantity": 1,
+            "unitAmount": 1200,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Oakleaf Joinery. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n21",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Ms Turner",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Fixed sticking sash window",
+        "items": [
+          {
+            "id": "li_mv6s5w2kvlunplpy",
+            "kind": "labour",
+            "description": "Labour — Fixed sticking sash window",
+            "quantity": 2,
+            "unitAmount": 40,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2kkyqag0pq",
+            "kind": "parts",
+            "description": "Sash cord",
+            "quantity": 1,
+            "unitAmount": 9,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2k2k47u2v7",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 30,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Oakleaf Joinery. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n22",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Kingswood Builders Ltd",
+        "customerEmail": "accounts@kingswoodbuilders.co.uk",
+        "customerType": "business",
+        "jobSummary": "Decking repair",
+        "items": [
+          {
+            "id": "li_mv6s5w2k1hs3eg5j",
+            "kind": "labour",
+            "description": "Labour — Decking repair",
+            "quantity": 5,
+            "unitAmount": 40,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2krwlnamo9",
+            "kind": "parts",
+            "description": "Boards",
+            "quantity": 1,
+            "unitAmount": 6,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2k8ktwnc7m",
+            "kind": "parts",
+            "description": "Boards",
+            "quantity": 1,
+            "unitAmount": 14.5,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Oakleaf Joinery. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n23",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Bristol Lettings",
+        "customerEmail": "invoices@bristollettings.co.uk",
+        "customerType": "business",
+        "jobSummary": "End of tenancy clean at 14 Brook St",
+        "items": [
+          {
+            "id": "li_mv6s5w2l181q8hc0",
+            "kind": "labour",
+            "description": "Labour (5 hrs)",
+            "quantity": 1,
+            "unitAmount": 2,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2lx9m6z5ls",
+            "kind": "parts",
+            "description": "Oven clean",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Sparkle Clean Bristol. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n24",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Patterson",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Weekly clean",
+        "items": [
+          {
+            "id": "li_mv6s5w2lq8rkgqmy",
+            "kind": "labour",
+            "description": "Labour — Weekly clean",
+            "quantity": 3,
+            "unitAmount": 18,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Sparkle Clean Bristol. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n25",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Sophie Adams",
+        "customerEmail": "sophie.adams@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "Deep clean",
+        "items": [
+          {
+            "id": "li_mv6s5w2l2nrd60k4",
+            "kind": "labour",
+            "description": "Labour — Deep clean",
+            "quantity": 6.5,
+            "unitAmount": 18,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2ld2x3yr41",
+            "kind": "parts",
+            "description": "Cleaning products",
+            "quantity": 1,
+            "unitAmount": 12,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Sparkle Clean Bristol. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n26",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Hartley & Sons",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Office clean",
+        "items": [
+          {
+            "id": "li_mv6s5w2lxoilw8u5",
+            "kind": "labour",
+            "description": "Labour — Office clean",
+            "quantity": 4,
+            "unitAmount": 20,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Sparkle Clean Bristol. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n27",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Green",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Carpet clean 3 rooms",
+        "items": [
+          {
+            "id": "li_mv6s5w2mawjrc62s",
+            "kind": "parts",
+            "description": "Carpet clean rooms a room",
+            "quantity": 1,
+            "unitAmount": 3,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2m0gd58wkr",
+            "kind": "parts",
+            "description": "Carpet clean rooms a room",
+            "quantity": 1,
+            "unitAmount": 40,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Sparkle Clean Bristol. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n28",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Ellis",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Mowed lawns and trimmed hedges",
+        "items": [
+          {
+            "id": "li_mv6s5w2mq4mp8mly",
+            "kind": "labour",
+            "description": "Labour — Mowed lawns and trimmed hedges",
+            "quantity": 3,
+            "unitAmount": 25,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2mswzeqk0z",
+            "kind": "other",
+            "description": "Green waste removal",
+            "quantity": 1,
+            "unitAmount": 20,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Greenfingers Garden Care. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n29",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Barker",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Hedge cut",
+        "items": [
+          {
+            "id": "li_mv6s5w2ma1f11vkh",
+            "kind": "labour",
+            "description": "Labour — Hedge cut",
+            "quantity": 4.5,
+            "unitAmount": 25,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2m7dtvf6is",
+            "kind": "other",
+            "description": "Tip",
+            "quantity": 1,
+            "unitAmount": 30,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Greenfingers Garden Care. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n30",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "St Mary's Primary School",
+        "customerEmail": "office@stmarys.bristol.sch.uk",
+        "customerType": "business",
+        "jobSummary": "Fence panels replaced",
+        "items": [
+          {
+            "id": "li_mv6s5w2mk15c1o85",
+            "kind": "labour",
+            "description": "Labour — Fence panels replaced",
+            "quantity": 6,
+            "unitAmount": 25,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2m1zdpmyql",
+            "kind": "parts",
+            "description": "Panels",
+            "quantity": 1,
+            "unitAmount": 3,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2m48zvb2au",
+            "kind": "parts",
+            "description": "Panels",
+            "quantity": 1,
+            "unitAmount": 32,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Greenfingers Garden Care. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n31",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Karen Walsh",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Garden tidy",
+        "items": [
+          {
+            "id": "li_mv6s5w2mji98i5dk",
+            "kind": "labour",
+            "description": "Labour — Garden tidy",
+            "quantity": 4,
+            "unitAmount": 25,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2mzrmh1jnd",
+            "kind": "other",
+            "description": "Skip",
+            "quantity": 1,
+            "unitAmount": 220,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Greenfingers Garden Care. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n32",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Monthly maintenance contract Riverside Hotel",
+        "items": [
+          {
+            "id": "li_mv6s5w2nryqqx9k6",
+            "kind": "other",
+            "description": "Additional charge",
+            "quantity": 1,
+            "unitAmount": 85,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Greenfingers Garden Care. Payment due within 14 days.",
+        "warnings": [
+          "Wasn't sure what £85.00 was for — check the description.",
+          "Couldn't spot the customer's name.",
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n33",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Abbott",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Painted lounge",
+        "items": [
+          {
+            "id": "li_mv6s5w2nqjlvefl2",
+            "kind": "labour",
+            "description": "Labour — Painted lounge (3 days)",
+            "quantity": 3,
+            "unitAmount": 180,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6s5w2nnmjn1mdg",
+            "kind": "parts",
+            "description": "Paint tins dulux",
+            "quantity": 1,
+            "unitAmount": 3,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2nuuk8ok3s",
+            "kind": "parts",
+            "description": "Paint tins dulux",
+            "quantity": 1,
+            "unitAmount": 42,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fresh Coat Decorating. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n34",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Hassan",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Wallpapered feature wall",
+        "items": [
+          {
+            "id": "li_mv6s5w2n0xkuv5tx",
+            "kind": "labour",
+            "description": "Labour — Wallpapered feature wall",
+            "quantity": 0.5,
+            "unitAmount": 30,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fresh Coat Decorating. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n35",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Greenway Estates",
+        "customerEmail": "accounts@greenwayestates.co.uk",
+        "customerType": "business",
+        "jobSummary": "Gloss woodwork whole house",
+        "items": [
+          {
+            "id": "li_mv6s5w2nzyrf35x1",
+            "kind": "other",
+            "description": "Gloss woodwork whole house",
+            "quantity": 1,
+            "unitAmount": 950,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fresh Coat Decorating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n36",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Donovan",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Ceiling repaint after leak",
+        "items": [
+          {
+            "id": "li_mv6s5w2oi9u4oi4r",
+            "kind": "labour",
+            "description": "Labour — Ceiling repaint after leak",
+            "quantity": 8,
+            "unitAmount": 30,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2ozfsngys0",
+            "kind": "parts",
+            "description": "Parts & materials",
+            "quantity": 1,
+            "unitAmount": 34.8,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fresh Coat Decorating. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n37",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr and Mrs Kowalski",
+        "customerEmail": "kowalski.home@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "Exterior painting",
+        "items": [
+          {
+            "id": "li_mv6s5w2ob7nev6yd",
+            "kind": "labour",
+            "description": "Labour — Exterior painting (4 days)",
+            "quantity": 4,
+            "unitAmount": 190,
+            "unit": "QUANTITY"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fresh Coat Decorating. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n38",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Wright",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Replaced 8 slipped tiles",
+        "items": [
+          {
+            "id": "li_mv6s5w2os5mwjibt",
+            "kind": "labour",
+            "description": "Labour — Replaced 8 slipped tiles",
+            "quantity": 3,
+            "unitAmount": 40,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2ovjcxf7r4",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 50,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Topline Roofing Ltd. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n39",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Bath Road Housing",
+        "customerEmail": "invoices@bathroadhousing.org.uk",
+        "customerType": "business",
+        "jobSummary": "Gutter clear 2 houses Assoc",
+        "items": [
+          {
+            "id": "li_mv6s5w2oce9kenla",
+            "kind": "parts",
+            "description": "Per house",
+            "quantity": 1,
+            "unitAmount": 65,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Topline Roofing Ltd. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n40",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Lloyd",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Flat roof re-felt garage",
+        "items": [
+          {
+            "id": "li_mv6s5w2ohklvoouw",
+            "kind": "other",
+            "description": "Flat roof re-felt garage",
+            "quantity": 1,
+            "unitAmount": 1450,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Topline Roofing Ltd. Payment due within 14 days.",
+        "warnings": [
+          "Notes say the price includes VAT; amounts here are treated as ex-VAT, so check the totals.",
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n41",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Ms Rivera",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Lock out at 11pm",
+        "items": [
+          {
+            "id": "li_mv6s5w2p01vgwi4v",
+            "kind": "labour",
+            "description": "Labour — Lock out at 11pm",
+            "quantity": 0.5,
+            "unitAmount": 60,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2pxg5ghzkp",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 90,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2p8j12buxv",
+            "kind": "parts",
+            "description": "New euro cylinder",
+            "quantity": 1,
+            "unitAmount": 35,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Keyway Locksmiths. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n42",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Osei",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Upvc door mech replaced",
+        "items": [
+          {
+            "id": "li_mv6s5w2ph3wc9o23",
+            "kind": "labour",
+            "description": "Labour — Upvc door mech replaced",
+            "quantity": 1,
+            "unitAmount": 60,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2pk76ao7bl",
+            "kind": "parts",
+            "description": "Gearbox",
+            "quantity": 1,
+            "unitAmount": 65,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Keyway Locksmiths. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n43",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Clarke Property Management",
+        "customerEmail": "accounts@clarkepm.co.uk",
+        "customerType": "business",
+        "jobSummary": "Gas safety cert x 4 properties",
+        "items": [
+          {
+            "id": "li_mv6s5w2pwfyjulre",
+            "kind": "labour",
+            "description": "Labour — Gas safety cert x 4 properties",
+            "quantity": 2,
+            "unitAmount": 55,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2pg98ireu7",
+            "kind": "other",
+            "description": "Additional charge",
+            "quantity": 1,
+            "unitAmount": 65,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2plebuixsr",
+            "kind": "parts",
+            "description": "A fan",
+            "quantity": 1,
+            "unitAmount": 145,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Warmhome Gas Services Ltd. Payment due within 14 days.",
+        "warnings": [
+          "Wasn't sure what £65.00 was for — check the description."
+        ]
+      }
+    },
+    {
+      "id": "n44",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs Ogunleye",
+        "customerEmail": "ogunleye.f@yahoo.co.uk",
+        "customerType": "consumer",
+        "jobSummary": "New combi installed",
+        "items": [
+          {
+            "id": "li_mv6s5w2pmlt7kfon",
+            "kind": "labour",
+            "description": "Labour — New combi installed (2 days)",
+            "quantity": 2,
+            "unitAmount": 280,
+            "unit": "QUANTITY"
+          },
+          {
+            "id": "li_mv6s5w2pivdyoakh",
+            "kind": "parts",
+            "description": "Worcester boiler",
+            "quantity": 1,
+            "unitAmount": 1,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2pv5wva2p8",
+            "kind": "parts",
+            "description": "Parts & materials — flue kit",
+            "quantity": 1,
+            "unitAmount": 95,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": true,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Warmhome Gas Services Ltd. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n45",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Hannah",
+        "customerEmail": "hannah.price@gmail.com",
+        "customerType": "consumer",
+        "jobSummary": "Tiled bathroom floor",
+        "items": [
+          {
+            "id": "li_mv6s5w2qoooos5fj",
+            "kind": "labour",
+            "description": "Labour — Tiled bathroom floor",
+            "quantity": 6,
+            "unitAmount": 35,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Square Edge Tiling. Payment due within 14 days.",
+        "warnings": []
+      }
+    },
+    {
+      "id": "n46",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mr Dobson",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Splashback in kitchen 2.5 sq m at 45 Per Sq",
+        "items": [
+          {
+            "id": "li_mv6s5w2qbvt5evp5",
+            "kind": "parts",
+            "description": "Splashback in kitchen sq m m",
+            "quantity": 1,
+            "unitAmount": 2.5,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2qk709dm4p",
+            "kind": "parts",
+            "description": "Trims",
+            "quantity": 1,
+            "unitAmount": 16,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Square Edge Tiling. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n47",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Windows at 15 each at 6 Houses On Elm Close",
+        "items": [
+          {
+            "id": "li_mv6s5w2q0pdxvs3d",
+            "kind": "parts",
+            "description": "Windows",
+            "quantity": 1,
+            "unitAmount": 15,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2qxnitea0x",
+            "kind": "parts",
+            "description": "Conservatory roof no",
+            "quantity": 1,
+            "unitAmount": 25,
+            "unit": "AMOUNT"
+          },
+          {
+            "id": "li_mv6s5w2qoaga2ev6",
+            "kind": "parts",
+            "description": "Conservatory roof no",
+            "quantity": 1,
+            "unitAmount": 6,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Crystal Clear Windows. Payment due within 14 days.",
+        "warnings": [
+          "Couldn't spot the customer's name.",
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n48",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Priya",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Flatpack assembly 2 wardrobes",
+        "items": [
+          {
+            "id": "li_mv6s5w2qw5bct7wi",
+            "kind": "labour",
+            "description": "Labour — Flatpack assembly 2 wardrobes",
+            "quantity": 4,
+            "unitAmount": 35,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fixit Handyman Services. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n49",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "Mrs O'Brien",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Bits n bobs",
+        "items": [
+          {
+            "id": "li_mv6s5w2qtyx7tbyt",
+            "kind": "labour",
+            "description": "Labour — Bits n bobs",
+            "quantity": 3,
+            "unitAmount": 35,
+            "unit": "HOURS"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Fixit Handyman Services. Payment due within 14 days.",
+        "warnings": [
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    },
+    {
+      "id": "n50",
+      "engine": {
+        "id": "rules",
+        "label": "Sorted rules engine (no AI key)",
+        "ai": false
+      },
+      "aiError": null,
+      "draft": {
+        "customerName": "",
+        "customerEmail": "",
+        "customerType": "consumer",
+        "jobSummary": "Kevin",
+        "items": [
+          {
+            "id": "li_mv6s5w2rvrdhf1lb",
+            "kind": "labour",
+            "description": "Labour — Kevin",
+            "quantity": 0.5,
+            "unitAmount": 45,
+            "unit": "HOURS"
+          },
+          {
+            "id": "li_mv6s5w2rnlce103m",
+            "kind": "callout",
+            "description": "Call-out charge",
+            "quantity": 1,
+            "unitAmount": 45,
+            "unit": "AMOUNT"
+          }
+        ],
+        "vatEnabled": false,
+        "vatRate": 20,
+        "currency": "GBP",
+        "issueDate": "2026-10-13",
+        "dueDate": "2026-10-27",
+        "note": "Thanks for choosing Dave Harris Plumbing & Heating. Payment due within 14 days.",
+        "warnings": [
+          "Couldn't spot the customer's name.",
+          "No email address found — PayPal needs one to send the invoice."
+        ]
+      }
+    }
+  ],
+  "finishedAt": "2026-10-13T14:32:43.683Z"
+}
