@@ -201,6 +201,17 @@ export function useSorted() {
     [mode, upsert, toast, approve],
   );
 
+  const cancelInvoice = useCallback(
+    async (inv: Invoice, approval?: string) => {
+      const token = approval ?? (await approve("cancel_invoice", inv.id));
+      const res = await api<{ invoice: Invoice; via: string }>(`/api/invoices/${encodeURIComponent(inv.id)}/cancel`, mode, { invoice: inv, approval: token });
+      upsert(res.invoice);
+      toast("info", `${inv.number} cancelled${res.via === "paypal-agent-toolkit" ? " in PayPal (Agent Toolkit)" : res.via === "paypal-rest" ? " in PayPal" : ""}. Chasing stopped.`);
+      return res.invoice;
+    },
+    [mode, upsert, toast, approve],
+  );
+
   /** Verify pasted sandbox creds, store them in this browser, and switch to live. */
   const connectPayPal = useCallback(
     async (creds: PayPalCreds) => {
@@ -275,6 +286,7 @@ export function useSorted() {
     createInvoice,
     sendReminder,
     markPaid,
+    cancelInvoice,
     resetDemo,
     connectPayPal,
     disconnectPayPal,

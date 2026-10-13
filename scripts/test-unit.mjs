@@ -18,6 +18,15 @@ execFileSync(
     path.join(root, "src/lib/parser.ts"),
     path.join(root, "src/lib/ai/provider.ts"),
     path.join(root, "src/lib/markdown.ts"),
+    path.join(root, "src/lib/paypal/mapping.ts"),
+    path.join(root, "src/lib/paypal/client.ts"),
+    path.join(root, "src/lib/paypal/toolkit.ts"),
+    path.join(root, "src/lib/paypal/webhook.ts"),
+    path.join(root, "src/lib/approval.ts"),
+    path.join(root, "src/lib/guard.ts"),
+    path.join(root, "src/lib/events.ts"),
+    path.join(root, "src/lib/qr.ts"),
+    path.join(root, "src/lib/reminders.ts"),
   ],
   { stdio: "inherit" },
 );
@@ -349,6 +358,226 @@ await step("chat markdown: tables, bold, lists, no HTML", async () => {
   check(nt.length === 2 && nt.every((x) => x.type === "p"), "pipes without separator stay text");
   const nb = MD.parseMarkdown("Customer | Owed\n--- | ---\nSam | £5");
   check(nb[0].type === "table" && nb[0].rows.length === 1, "table without outer pipes");
+});
+
+// ---------------- PayPal mapping, client, toolkit, approvals, guards, events ----------------
+const MAP = require(path.join(out, "lib/paypal/mapping.js"));
+const CL = require(path.join(out, "lib/paypal/client.js"));
+const APR = require(path.join(out, "lib/approval.js"));
+const GD = require(path.join(out, "lib/guard.js"));
+const EV = require(path.join(out, "lib/events.js"));
+const QR = require(path.join(out, "lib/qr.js"));
+const REM = require(path.join(out, "lib/reminders.js"));
+const WH = require(path.join(out, "lib/paypal/webhook.js"));
+
+const li = (id, kind, description, quantity, unitAmount, unit = "QUANTITY") => ({ id, kind, description, quantity, unitAmount, unit });
+const baseDraft = {
+  customerName: "Mrs Ngozi Okafor", customerEmail: "ngozi.okafor@example.com", customerType: "consumer", jobSummary: "Stopcock repair",
+  items: [li("a", "labour", "Labour", 2.5, 45, "HOURS"), li("b", "parts", "New valve", 1, 18), li("c", "callout", "Call-out", 1, 45)],
+  vatEnabled: true, vatRate: 20, currency: "GBP", issueDate: "2026-10-13", dueDate: "2026-10-27",
+};
+
+await step("PayPal mapping: draft → Invoicing v2 payload (VAT per line, private vs business)", async () => {
+  const p = MAP.draftToPayPal(baseDraft, S, "INV-1042");
+  check(p.detail.invoice_number === "INV-1042" && p.detail.currency_code === "GBP", "number + GBP");
+  check(p.detail.payment_term.term_type === "DUE_ON_DATE_SPECIFIED" && p.detail.payment_term.due_date === "2026-10-27", "due date term");
+  check(p.items.length === 3 && p.items.every((i) => i.tax?.name === "VAT" && i.tax?.percent === "20"), "VAT 20% on every line");
+  check(p.items[0].unit_of_measure === "HOURS" && p.items[0].quantity === "2.5" && p.items[0].unit_amount.value === "45.00", "hours line: qty 2.5 × 45.00");
+  check(p.configuration.tax_inclusive === false, "VAT added on top");
+  const bi = p.primary_recipients[0].billing_info;
+  check(!bi.business_name && bi.name.given_name === "Ngozi" && bi.name.surname === "Okafor" && bi.language === "en-GB", "private: title stripped, given/surname, en-GB");
+  check(p.invoicer.business_name === S.businessName, "invoicer business name");
+  const noVat = MAP.draftToPayPal({ ...baseDraft, vatEnabled: false }, S);
+  check(noVat.items.every((i) => !i.tax) && !noVat.detail.invoice_number, "no VAT: no tax objects; no number lets PayPal assign");
+  const biz = MAP.draftToPayPal({ ...baseDraft, customerName: "Harbourside Lettings Ltd", customerType: "business" }, S);
+  const bb = biz.primary_recipients[0].billing_info;
+  check(bb.business_name === "Harbourside Lettings Ltd" && bb.name.given_name === "Accounts", "business: business_name + Accounts Department");
+  const zero = MAP.draftToPayPal({ ...baseDraft, items: [...baseDraft.items, li("d", "other", "", 0, 10)] }, S);
+  check(zero.items.length === 3, "zero-quantity lines dropped");
+});
+
+await step("PayPal mapping: Invoicing v2 → ledger invoice", async () => {
+  const full = {
+    id: "INV2-AAAA", status: "SENT",
+    detail: { invoice_number: "INV-1004", invoice_date: "2026-09-20", currency_code: "GBP", memo: "Created by Sorted from job notes: [Sorted demo:dave] Radiator valves x4",
+      payment_term: { due_date: "2026-10-04" }, metadata: { recipient_view_url: "https://www.sandbox.paypal.com/invoice/p/#X", invoicer_view_url: "https://www.sandbox.paypal.com/invoice/details/INV2-AAAA" } },
+    primary_recipients: [{ billing_info: { name: { given_name: "Dave", surname: "Bennett" }, email_address: "sb-dave.bennett@example.com" } }],
+    items: [{ name: "Labour", quantity: "2", unit_amount: { currency_code: "GBP", value: "45.00" }, unit_of_measure: "HOURS", tax: { name: "VAT", percent: "20" } }],
+    amount: { currency_code: "GBP", value: "108.00", breakdown: { item_total: { currency_code: "GBP", value: "90.00" }, tax_total: { currency_code: "GBP", value: "18.00" } } },
+    due_amount: { currency_code: "GBP", value: "108.00" },
+  };
+  const inv = MAP.payPalToInvoice(full, true);
+  check(inv.customerName === "Dave Bennett" && inv.customerType === "consumer", "private customer name/type");
+  check(inv.subtotal === 90 && inv.vat === 18 && inv.total === 108 && inv.vatEnabled && inv.vatRate === 20, "subtotal/VAT/total from breakdown");
+  check(inv.amountPaid === 0 && inv.items[0].kind === "labour", "unpaid; HOURS → labour");
+  check(inv.jobSummary === "Radiator valves x4", `memo prefixes stripped (${inv.jobSummary})`);
+  check(inv.payerViewUrl === "https://www.sandbox.paypal.com/invoice/p/#X", "payer view link kept");
+  const biz = MAP.payPalToInvoice({ ...full, primary_recipients: [{ billing_info: { business_name: "Redland Property Management Ltd", name: { given_name: "Accounts", surname: "Department" } } }] }, true);
+  check(biz.customerName === "Redland Property Management Ltd" && biz.customerType === "business", "business_name wins, business type");
+  const summary = MAP.payPalToInvoice({ id: "INV2-B", status: "MARKED_AS_PAID", detail: { currency_code: "GBP", metadata: { create_time: "Tue 2026-10-13 12:26 AM BST" } }, amount: { value: "95.00" } }, true);
+  check(summary.subtotal === 95 && summary.vat === 0 && summary.amountPaid === 95, "list summary: total as subtotal, paid status → fully paid");
+  check(summary.issueDate === "2026-10-13", "display-string create_time parsed");
+  const part = MAP.payPalToInvoice({ ...full, status: "PARTIALLY_PAID", due_amount: { currency_code: "GBP", value: "58.00" } }, true);
+  check(part.amountPaid === 50, `paid = total - due (${part.amountPaid})`);
+  check(MAP.payPalToInvoice({ ...full, status: "WEIRD" }, true).status === "SENT", "unknown status → SENT");
+});
+
+await step("PayPal REST client: errors, token refresh, idempotency", async () => {
+  const realFetch = globalThis.fetch;
+  const seen = [];
+  let tokenCalls = 0;
+  let first = true;
+  globalThis.fetch = async (url, init = {}) => {
+    seen.push({ url: String(url), init });
+    if (String(url).endsWith("/v1/oauth2/token")) {
+      tokenCalls++;
+      return new Response(JSON.stringify({ access_token: `tok${tokenCalls}`, expires_in: 3600 }), { status: 200 });
+    }
+    if (String(url).includes("/remind")) {
+      return new Response(JSON.stringify({ name: "UNPROCESSABLE_ENTITY", message: "The requested action could not be performed", details: [{ issue: "CANNOT_REMIND_INVOICE", description: "Invoice is paid" }] }), { status: 422, headers: { "paypal-debug-id": "dbg1" } });
+    }
+    if (String(url).includes("/v2/invoicing/invoices/INV2-T")) {
+      if (first) {
+        first = false;
+        return new Response("{}", { status: 401 });
+      }
+      return new Response(JSON.stringify({ id: "INV2-T", status: "SENT", detail: { currency_code: "GBP" } }), { status: 200 });
+    }
+    return new Response("{}", { status: 404 });
+  };
+  try {
+    const c = new CL.PayPalClient({ clientId: "unit-id", clientSecret: "unit-secret", baseUrl: CL.SANDBOX_BASE });
+    let err;
+    try {
+      await c.remind("INV2-PAID", { subject: "s", note: "n" });
+    } catch (e) {
+      err = e;
+    }
+    check(err instanceof CL.PayPalError && err.status === 422 && err.debugId === "dbg1", "422 → PayPalError with status + debug id");
+    check(CL.hasIssue(err, "CANNOT_REMIND_INVOICE") && /Invoice is paid/.test(err.message), "issue detail kept");
+    const remindReq = seen.find((x) => x.url.includes("/remind"));
+    check(!!remindReq.init.headers["PayPal-Request-Id"], "POST carries a PayPal-Request-Id (idempotency)");
+    check(remindReq.init.headers.Authorization === "Bearer tok1", "bearer token used");
+    const inv = await c.getInvoice("INV2-T");
+    check(inv.id === "INV2-T" && tokenCalls === 2, `401 → one forced token refresh then success (token calls ${tokenCalls})`);
+    check(seen.find((x) => x.url.endsWith("/v1/oauth2/token")).init.headers.Authorization.startsWith("Basic "), "token call uses Basic auth");
+    check(CL.paypalConfigFromHeaders(new Request("http://x", { headers: { "x-paypal-client-id": "abc", "x-paypal-client-secret": "has space" } })) === null, "pasted keys with whitespace rejected");
+    const pasted = CL.paypalConfigFromHeaders(new Request("http://x", { headers: { "x-paypal-client-id": "abc", "x-paypal-client-secret": "def" } }));
+    check(pasted.baseUrl === CL.SANDBOX_BASE, "pasted keys pinned to sandbox");
+    check(!CL.credKey(pasted).includes("def"), "cache key never contains the secret");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+await step("Agent Toolkit: {ok:false} results become errors, never success", async () => {
+  // Stub @paypal/agent-toolkit/ai-sdk so runToolkitTool's dynamic import gets a fake toolkit.
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ access_token: "tk", expires_in: 3600 }), { status: 200 });
+  const tkPath = require.resolve("@paypal/agent-toolkit/ai-sdk");
+  const results = {
+    send_invoice_reminder: JSON.stringify({ ok: false, status: 422, code: "PAYPAL_API_HTTP_ERROR", message: "Invoice is already paid" }),
+    get_invoice: JSON.stringify({ id: "INV2-OK", status: "SENT" }),
+    list_invoices: JSON.stringify({ error: { message: "boom" } }),
+    generate_invoice_qr_code: JSON.stringify("--b\r\nContent-Disposition: form-data; name=\"image\"\r\n\r\niVBORw0KGgoAAAANSUhEUgAAAMgAAADIAQAAAACFI5MzAAAB\r\n--b--"),
+  };
+  class FakeToolkit {
+    constructor() {
+      this.client = {};
+    }
+    getTools() {
+      return Object.fromEntries(Object.entries(results).map(([k, v]) => [k, { execute: async () => v }]));
+    }
+  }
+  require.cache[tkPath] = { id: tkPath, exports: { PayPalAgentToolkit: FakeToolkit }, loaded: true };
+  const TK = require(path.join(out, "lib/paypal/toolkit.js"));
+  const cfg = { clientId: "fake", clientSecret: "fake2", baseUrl: CL.SANDBOX_BASE };
+  try {
+    let err;
+    try {
+      await TK.runToolkitTool(cfg, "send_invoice_reminder", { invoice_id: "INV2-PAID" });
+    } catch (e) {
+      err = e;
+    }
+    check(err instanceof CL.PayPalError && err.status === 422 && /already paid/.test(err.message), "ok:false → PayPalError(422)");
+    const okRes = await TK.runToolkitTool(cfg, "get_invoice", { invoice_id: "INV2-OK" });
+    check(okRes.id === "INV2-OK", "normal JSON result passes through");
+    let err2;
+    try {
+      await TK.runToolkitTool(cfg, "list_invoices", {});
+    } catch (e) {
+      err2 = e;
+    }
+    check(err2 && /boom/.test(err2.message), "{error} result throws");
+    const qrOut = await TK.runToolkitTool(cfg, "generate_invoice_qr_code", { invoice_id: "INV2-OK" });
+    check(QR.qrFromToolkitOutput(qrOut).startsWith("data:image/png;base64,iVBOR"), "multipart QR body → PNG data URL");
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+await step("Approval tokens: signed, scoped, short-lived, single use", async () => {
+  process.env.SORTED_APPROVAL_SECRET = "unit-test-secret";
+  const t = APR.issueApproval("send_reminder", "INV2-1", "live").token;
+  check(APR.verifyApproval(t, "send_reminder", "INV2-2", "live").ok === false, "other invoice rejected");
+  check(APR.verifyApproval(t, "mark_paid", "INV2-1", "live").ok === false, "other action rejected");
+  check(APR.verifyApproval(t, "send_reminder", "INV2-1", "demo").ok === false, "other mode rejected");
+  check(APR.verifyApproval(t, "send_reminder", "INV2-1", "live").ok === true, "exact match accepted");
+  check(APR.verifyApproval(t, "send_reminder", "INV2-1", "live").ok === false, "replay rejected");
+  const [payload] = APR.issueApproval("create_invoice", "new", "live").token.split(".");
+  check(APR.verifyApproval(`${payload}.AAAA`, "create_invoice", "new", "live").ok === false, "forged signature rejected");
+  const old = APR.issueApproval("mark_paid", "INV2-9", "demo", Date.now() - 11 * 60_000).token;
+  const v = APR.verifyApproval(old, "mark_paid", "INV2-9", "demo");
+  check(!v.ok && /expired/.test(v.reason), "expired after 10 minutes");
+  check(APR.verifyApproval(undefined, "mark_paid", "x", "demo").ok === false, "missing token rejected");
+});
+
+await step("Live write guards: test recipients only on the shared sandbox, rate limits", async () => {
+  GD._resetGuards();
+  check(GD.isSafeRecipient("sb-tom@example.com") && GD.isSafeRecipient("a@personal.example.com") && GD.isSafeRecipient("x@harbourside-lettings.example"), "example.com / .example allowed");
+  check(!GD.isSafeRecipient("someone@gmail.com") && !GD.isSafeRecipient("x@example.com.evil.io"), "real domains blocked");
+  check(GD.isSafeRecipient("x@acme.co.uk", "acme.co.uk"), "extra allowed domains via env");
+  const req = new Request("http://x", { headers: { "x-forwarded-for": "9.9.9.9" } });
+  const server = { mode: "live", credSource: "server", cfg: {} };
+  check(GD.liveWriteGuard(req, server, ["bob@gmail.com"]).status === 422, "server keys: real address → 422");
+  check(GD.liveWriteGuard(req, { mode: "demo", credSource: null, cfg: null }, ["bob@gmail.com"]) === null, "demo mode untouched");
+  check(GD.liveWriteGuard(req, { mode: "live", credSource: "browser", cfg: {} }, ["bob@gmail.com"]) === null, "own sandbox keys: any address");
+  let last;
+  for (let i = 0; i < 13; i++) last = GD.liveWriteGuard(req, server, ["a@example.com"]);
+  check(last && last.status === 429 && last.headers.get("Retry-After"), "13th live write in 10 min from one IP → 429");
+});
+
+await step("Payment events: lateness, messages, ledger diff, webhook mapping", async () => {
+  const inv = { id: "INV2-D", number: "INV-1004", customerName: "Dave Bennett", total: 182, dueDate: "2026-10-04", paidDate: "2026-10-13", status: "PAID" };
+  const e = EV.eventFromInvoice(inv, "paid", "paypal-webhook");
+  check(e.daysLate === 9 && e.message === "Dave Bennett paid £182, 9 days late (INV-1004). Chasing stopped.", e.message);
+  check(EV.eventMessage({ kind: "paid", customerName: "Sam", amount: 95.5, invoiceNumber: "INV-1", daysLate: -2 }) === "Sam paid £95.50, 2 days early (INV-1).", "early payment wording");
+  const diff = EV.diffLedger([{ ...inv, status: "SENT" }, { ...inv, id: "X", status: "SENT" }], [inv, { ...inv, id: "X", status: "CANCELLED" }]);
+  check(diff.length === 2 && diff[0].kind === "paid" && diff[1].kind === "cancelled", "diff finds paid + cancelled");
+  check(EV.diffLedger([inv], [inv]).length === 0, "no change, no event");
+  const wh = WH.toPaymentEvent({ event_type: "INVOICING.INVOICE.PAID", create_time: "2026-10-13T10:00:00Z", resource: { invoice: {
+    id: "INV2-D", status: "PAID", detail: { invoice_number: "INV-1004", currency_code: "GBP", payment_term: { due_date: "2026-10-04" } },
+    primary_recipients: [{ billing_info: { name: { given_name: "Dave", surname: "Bennett" } } }], amount: { value: "182.00" },
+    payments: { transactions: [{ payment_date: "2026-10-13" }] } } } }, null);
+  check(wh && wh.message === "Dave Bennett paid £182, 9 days late (INV-1004). Chasing stopped.", `webhook → ${wh?.message}`);
+  check(WH.toPaymentEvent({ event_type: "INVOICING.INVOICE.CREATED", resource: {} }, null) === null, "other event types ignored");
+  const r1 = WH.recordEvent(wh, "WH-1");
+  check(r1 && WH.recordEvent(wh, "WH-1") === null, "duplicate webhook delivery ignored");
+  check(WH.eventsSince(0).events.length >= 1 && WH.eventsSince(r1.seq).events.length === 0, "eventsSince");
+});
+
+await step("Reminders: pay link, Pay in 3 (private, £20–£3,000), B2B waiver", async () => {
+  const inv = { id: "INV2-D", number: "INV-1004", status: "SENT", customerName: "Dave Bennett", customerEmail: "d@example.com", customerType: "consumer", jobSummary: "Radiator valves",
+    items: [], vatEnabled: false, vatRate: 20, currency: "GBP", subtotal: 182, vat: 0, total: 182, amountPaid: 0, issueDate: "2026-09-20", dueDate: "2026-10-04", reminders: [],
+    payerViewUrl: "https://www.sandbox.paypal.com/invoice/p/#ABC", source: "paypal" };
+  const firm = REM.templateReminder(inv, S, "firm", TODAY);
+  check(firm.body.includes(inv.payerViewUrl) && /Pay in 3/.test(firm.body) && /subject to status/.test(firm.body), "private: link + hedged Pay in 3");
+  check(!/Pay in 3/.test(REM.templateReminder({ ...inv, total: 12 }, S, "firm", TODAY).body), "no Pay in 3 under £20");
+  const biz = { ...inv, customerName: "Redland Property Management Ltd", customerType: "business", total: 491.4 };
+  const fin = REM.templateReminder(biz, S, "final", TODAY);
+  check(/Late Payment of Commercial Debts/.test(fin.body) && /pay the invoice in full today .* waive the statutory interest/.test(fin.body), "B2B final: Act + pay-today waiver");
+  check(!/Pay in 3/.test(fin.body), "no Pay in 3 for business");
+  check(!/waive/.test(REM.templateReminder(inv, S, "final", TODAY).body), "no waiver for private customers");
 });
 
 console.log(`\n${passes} checks passed, ${failures} failed`);

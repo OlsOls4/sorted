@@ -1,11 +1,22 @@
 // PayPal Agent Toolkit integration (server-only).
 //
-// In live mode the Ask Sorted agent's PayPal tools (list_invoices, get_invoice,
-// send_invoice_reminder) are executed through @paypal/agent-toolkit's
-// AI-SDK tool objects, so the agent drives PayPal through PayPal's own
-// agent tool layer. Core invoice creation uses our direct REST client
-// (see client.ts) because it needs Prefer: return=representation, idempotency
-// keys, retries and GBP/UK-specific payload shaping that we control end-to-end.
+// What runs through @paypal/agent-toolkit (its AI-SDK tool objects, executed
+// server-side) in live mode:
+//   - Ask Sorted's PayPal tools: list_invoices (ledger sync + the model's
+//     list_invoices tool), get_invoice, generate_invoice_qr_code.
+//   - Confirmed writes: send_invoice_reminder (reminders) and cancel_sent_invoice
+//     (cancel). The model can only propose these; the route runs them after
+//     verifying a signed approval token (see ../approval.ts).
+//   - The invoice details modal's QR code (generate_invoice_qr_code).
+// What uses our own REST client (client.ts) instead:
+//   - Create + send, because it needs Prefer: return=representation, idempotency
+//     keys, duplicate-number retry, orphan-draft clean-up and GBP/UK VAT shaping.
+//   - Recording a cash/bank payment (no toolkit tool for it), list hydration
+//     (per-invoice GETs for line items/VAT), webhook signature verification.
+//   - Fallback for reminders/cancel only when the toolkit couldn't start or
+//     authenticate (never to retry a PayPal-side rejection).
+// The toolkit's own token cache never expires, so we inject our cached,
+// auto-refreshed OAuth token before each call and rebuild it every 30 minutes.
 
 import "server-only";
 import type { PayPalConfig } from "./client";
@@ -13,10 +24,7 @@ import { PayPalClient, PayPalError, credKey, isSandbox } from "./client";
 
 type ToolLike = { description?: string; execute?: (args: Record<string, unknown>, opts?: unknown) => Promise<unknown> };
 
-// The toolkit caches its OAuth token without expiry, so rebuild it periodically. Keyed per credential set.
-// Before each run we also hand it the token from our own client (cached + refreshed
-// there), so the toolkit never needs to do its own Basic-auth token call. That keeps
-// tokens fresh and lets the toolkit work when auth is injected by a dev proxy.
+// Keyed per credential set (fingerprint, never the raw secret).
 type ToolkitInstance = { getTools(): Record<string, ToolLike>; client?: { _accessToken?: string } };
 const cache = new Map<string, { tools: Record<string, ToolLike>; toolkit: ToolkitInstance; at: number }>();
 const TOOLKIT_TTL_MS = 30 * 60 * 1000;

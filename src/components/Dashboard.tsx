@@ -202,6 +202,14 @@ export function Dashboard() {
             setViewingId(null);
             setConfirmPaid(inv);
           }}
+          onCancel={async (inv) => {
+            try {
+              await c.cancelInvoice(inv);
+            } catch (e) {
+              toast("err", (e as Error).message);
+              throw e;
+            }
+          }}
         />
       )}
       {reminding && (

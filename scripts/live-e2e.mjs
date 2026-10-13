@@ -126,6 +126,20 @@ const trace = (ch.data.toolTrace ?? []).map((t) => `${t.tool}${t.via ? `[${t.via
 ok(ch.status === 200 && /Acme/i.test(ch.data.reply ?? ch.data.content ?? JSON.stringify(ch.data)), "Ask Sorted 'who owes me what' sees live Acme invoice", trace);
 console.log("      reply:", String(ch.data.reply ?? ch.data.content ?? "").slice(0, 400).replace(/\n/g, " | "));
 
+// 6b. Agent Toolkit tools in chat (QR code) + approval enforcement + guard + cancel
+const qrc = await call("/api/chat", { messages: [{ role: "user", content: "QR code for Acme Lettings" }], settings, ledger: [] });
+ok(/^data:image\/png;base64,/.test(qrc.data.qr?.dataUrl ?? "") && qrc.data.qr?.via === "paypal-agent-toolkit", "Ask Sorted: generate_invoice_qr_code via Agent Toolkit", (qrc.data.toolTrace ?? []).map((t) => `${t.tool}[${t.via}]`).join(", "));
+const chase = await call("/api/chat", { messages: [{ role: "user", content: "chase Acme Lettings" }], settings, ledger: [] });
+ok(chase.data.pendingAction?.type === "send_reminder" && !!chase.data.pendingAction?.approvalToken, "Ask Sorted: send_invoice_reminder returns a 'Needs your OK' card with a signed approval (nothing sent)");
+const unapproved = await call(`/api/invoices/${encodeURIComponent(i2?.id ?? "x")}/remind`, { subject: "x", body: "y", invoice: i2, approval: "nope" });
+ok(unapproved.status === 403, "write without a valid approval → 403", String(unapproved.status));
+const realAddr = await call("/api/invoices", { draft: { ...draft1, customerEmail: "someone@gmail.com" }, settings });
+ok(realAddr.status === 422 && realAddr.data.code === "RECIPIENT_NOT_ALLOWED", "shared sandbox refuses real email addresses", String(realAddr.status));
+if (i2) {
+  const cx = await call(`/api/invoices/${encodeURIComponent(i2.id)}/cancel`, { invoice: i2 });
+  ok(cx.status === 200 && cx.data.invoice?.status === "CANCELLED", "cancel sent invoice", `${cx.status} via ${cx.data.via} ${cx.data.invoice?.status ?? cx.data.error}`);
+}
+
 // 7. validation + error mapping
 const bad = await call("/api/invoices", { draft: { ...draft1, customerEmail: "nope" }, settings });
 ok(bad.status === 422, "invalid draft rejected before PayPal", String(bad.status));

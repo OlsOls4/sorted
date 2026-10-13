@@ -21,6 +21,7 @@ export interface InvoiceBackend {
   list(clientLedger?: Invoice[]): Promise<BackendResult<Invoice[]>>;
   remind(invoice: Invoice | string, subject: string, note: string, stage?: ReminderStage): Promise<BackendResult<Invoice | null>>;
   markPaid(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
+  cancel(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
 }
 
 export function validateDraft(d: InvoiceDraft): string[] {
@@ -106,6 +107,12 @@ class MockBackend implements InvoiceBackend {
       via: "mock-paypal" as const,
     };
   }
+
+  async cancel(invoice: Invoice | string) {
+    if (typeof invoice === "string") return { data: null, via: "mock-paypal" as const };
+    if (!isOpen(invoice)) throw new PayPalError(`${invoice.number} is ${invoice.status === "CANCELLED" ? "already cancelled" : "paid"}, so it can't be cancelled.`, 422);
+    return { data: { ...invoice, status: "CANCELLED" as const }, via: "mock-paypal" as const };
+  }
 }
 
 function stageFor(inv: Invoice) {
@@ -182,6 +189,22 @@ class PayPalBackend implements InvoiceBackend {
     const fresh = payPalToInvoice(await this.client.getInvoice(id), isSandbox(this.cfg));
     if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
     return { data: fresh, via: "paypal-rest" as const };
+  }
+
+  /** Cancels a sent invoice through the Agent Toolkit's cancel_sent_invoice (REST fallback). The customer isn't emailed. */
+  async cancel(invoice: Invoice | string) {
+    const id = typeof invoice === "string" ? invoice : invoice.id;
+    let via: "paypal-agent-toolkit" | "paypal-rest" = "paypal-agent-toolkit";
+    try {
+      await runToolkitTool(this.cfg, "cancel_sent_invoice", { invoice_id: id, send_to_recipient: false });
+    } catch (e) {
+      if (!isToolkitSetupError(e)) throw e;
+      via = "paypal-rest";
+      await this.client.cancelInvoice(id, { notify: false });
+    }
+    const fresh = payPalToInvoice(await this.client.getInvoice(id), isSandbox(this.cfg));
+    if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
+    return { data: fresh, via };
   }
 }
 

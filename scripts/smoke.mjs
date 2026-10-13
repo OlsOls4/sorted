@@ -74,6 +74,9 @@ ok(payPage.status === 200, "customer view: mock payer page renders");
 const sent = await post(`/api/invoices/${encodeURIComponent(overdueBiz.id)}/remind`, { invoice: overdueBiz, subject: rem.json.draft.subject, body: rem.json.draft.body });
 ok(sent.json.invoice?.reminders?.length === overdueBiz.reminders.length + 1, "remind: logged on invoice");
 
+const toCancel = list.invoices.find((i) => i.status === "SENT" && i.id !== consumer.id && i.id !== overdueBiz.id);
+const cx = await post(`/api/invoices/${encodeURIComponent(toCancel.id)}/cancel`, { invoice: toCancel });
+ok(cx.json.invoice?.status === "CANCELLED", "cancel invoice (approval required)");
 const paid = await post(`/api/invoices/${encodeURIComponent(consumer.id)}/mark-paid`, { invoice: consumer });
 ok(paid.json.invoice?.status === "MARKED_AS_PAID", "mark paid");
 
