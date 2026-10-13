@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
-    "test": "node scripts/test-unit.mjs",
+    "test": "node scripts/test-unit.mjs && node scripts/test-studio.mjs",
     "seed:sandbox": "node scripts/seed-sandbox.mjs",
     "webhook:register": "node scripts/register-webhook.mjs"
   },
@@ -18,6 +18,8 @@
     "@types/qrcode": "^1.5.6",
     "ag-grid-community": "^36.2.0",
     "ag-grid-react": "^36.2.0",
+    "ag-studio": "3.0.0",
+    "ag-studio-react": "3.0.0",
     "next": "^16.4.0",
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
