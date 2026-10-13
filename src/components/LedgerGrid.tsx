@@ -312,6 +312,25 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: 
     ]);
   }, []);
 
+  // AG Grid only re-renders a cell when its value changes, and the Totals row's Customer value is
+  // always "Totals". Force the pinned row to redraw whenever its summary changes (filter, search, data).
+  useEffect(() => {
+    const refresh = () => {
+      const api = apiRef.current;
+      if (!api || api.isDestroyed()) return;
+      const nodes: IRowNode<Row>[] = [];
+      for (let i = 0; i < api.getPinnedBottomRowCount(); i++) {
+        const n = api.getPinnedBottomRow(i);
+        if (n) nodes.push(n);
+      }
+      if (nodes.length) api.refreshCells({ rowNodes: nodes, force: true });
+    };
+    refresh();
+    // The grid may apply the new pinnedBottomRowData after this effect; refresh again next frame.
+    const raf = requestAnimationFrame(refresh);
+    return () => cancelAnimationFrame(raf);
+  }, [pinned]);
+
   const money = (p: ValueFormatterParams<Row, number>) => (p.value == null ? "" : gbp(p.value));
   const dateFmt = (p: ValueFormatterParams<Row, string>) => (p.value ? ukDate(p.value) : "");
   const dateComparator = (filter: Date, cell: string) => {

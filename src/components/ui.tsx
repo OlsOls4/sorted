@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { DisplayStatus } from "@/lib/format";
 import type { EngineInfo, ReminderStage } from "@/lib/types";
+import { parseMarkdown, type Inline } from "@/lib/markdown";
 
 export function Modal({
   open,
@@ -161,31 +162,90 @@ export function PayPalMark({ className = "" }: { className?: string }) {
 }
 
 /** Tiny markdown: **bold**, bullet lines, line breaks. Safe: no HTML injection. */
+function Inlines({ parts }: { parts: Inline[] }) {
+  return (
+    <>
+      {parts.map((p, j) =>
+        p.kind === "bold" ? (
+          <strong key={j} className="font-semibold text-ink">
+            {p.text}
+          </strong>
+        ) : p.kind === "code" ? (
+          <code key={j} className="rounded bg-white px-1 font-mono text-[12px] ring-1 ring-line">
+            {p.text}
+          </code>
+        ) : (
+          <span key={j}>{p.text}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+const ALIGN = { left: "text-left", center: "text-center", right: "text-right" } as const;
+// Money and counts read better right-aligned even when the model forgets the ":" in the separator.
+const numeric = (parts: Inline[]) => /^[\s£$€+\-−]*[\d,.]+%?\s*(?:days?|d)?$/i.test(parts.map((p) => p.text).join(""));
+
+/** Renders the small markdown subset from lib/markdown. Text only: raw HTML in a reply stays literal. */
 export function RichText({ text }: { text: string }) {
-  const lines = text.split("\n");
+  const blocks = parseMarkdown(text);
   return (
     <div className="space-y-1 text-sm leading-relaxed">
-      {lines.map((line, i) => {
-        if (!line.trim()) return <div key={i} className="h-1.5" />;
-        const isBullet = /^\s*(?:[•\-*]|\d+\.)\s+/.test(line);
-        const content = line.replace(/^\s*(?:[•\-*])\s+/, "");
-        const parts = content.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-          p.startsWith("**") && p.endsWith("**") ? (
-            <strong key={j} className="font-semibold text-ink">
-              {p.slice(2, -2)}
-            </strong>
-          ) : (
-            <span key={j}>{p}</span>
-          ),
-        );
-        return isBullet ? (
-          <div key={i} className="flex gap-2 pl-1">
-            <span className="text-brand">•</span>
-            <span>{parts}</span>
-          </div>
-        ) : (
-          <p key={i}>{parts}</p>
-        );
+      {blocks.map((b, i) => {
+        switch (b.type) {
+          case "gap":
+            return <div key={i} className="h-1.5" />;
+          case "h":
+            return (
+              <p key={i} className="pt-1 font-semibold text-ink">
+                <Inlines parts={b.inline} />
+              </p>
+            );
+          case "li":
+            return (
+              <div key={i} className="flex gap-2 pl-1">
+                <span className={b.marker ? "min-w-[1.1rem] text-muted tabular-nums" : "text-brand"}>{b.marker ?? "•"}</span>
+                <span className="min-w-0">
+                  <Inlines parts={b.inline} />
+                </span>
+              </div>
+            );
+          case "table": {
+            const right = b.align.map((a, k) => a === "right" || (a === "left" && b.rows.length > 0 && b.rows.every((r) => !r[k] || numeric(r[k]) || !r[k].some((p) => p.text.trim()))));
+            return (
+              <div key={i} className="my-1.5 max-w-full overflow-x-auto rounded-lg bg-white ring-1 ring-line">
+                <table className="w-full border-collapse text-[12.5px] leading-snug">
+                  <thead>
+                    <tr className="bg-paper/60">
+                      {b.header.map((h, k) => (
+                        <th key={k} scope="col" className={`border-b border-line px-2.5 py-1.5 font-semibold whitespace-nowrap text-ink ${right[k] ? "text-right" : ALIGN[b.align[k]]}`}>
+                          <Inlines parts={h} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {b.rows.map((r, ri) => (
+                      <tr key={ri} className="border-b border-line/60 last:border-0">
+                        {r.map((c, k) => (
+                          <td key={k} className={`px-2.5 py-1.5 align-top ${right[k] ? "text-right tabular-nums whitespace-nowrap" : ALIGN[b.align[k]]}`}>
+                            <Inlines parts={c} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          }
+          default:
+            return (
+              <p key={i}>
+                <Inlines parts={b.inline} />
+              </p>
+            );
+        }
       })}
     </div>
   );

@@ -17,6 +17,7 @@ execFileSync(
     "--strict", "--skipLibCheck", "--esModuleInterop", "--rootDir", path.join(root, "src"),
     path.join(root, "src/lib/parser.ts"),
     path.join(root, "src/lib/ai/provider.ts"),
+    path.join(root, "src/lib/markdown.ts"),
   ],
   { stdio: "inherit" },
 );
@@ -25,6 +26,7 @@ const require = createRequire(path.join(out, "x.js"));
 require.cache[require.resolve("server-only")] = { id: "server-only", exports: {}, loaded: true };
 const { parseJobNotes } = require(path.join(out, "lib/parser.js"));
 const P = require(path.join(out, "lib/ai/provider.js"));
+const MD = require(path.join(out, "lib/markdown.js"));
 
 let failures = 0;
 let passes = 0;
@@ -327,6 +329,26 @@ await step("400 (bad request) falls through without cooldown", async () => {
   const r = await P.getLLM().chat({ system: "s", messages: [{ role: "user", content: "x" }] });
   check(r.engine.id === "nvidia" && P.providerCoolingUntil("Groq openai/gpt-oss-20b") === null, "no cooldown on 400");
   check(calls.length === 2 && calls[0].body.model === "openai/gpt-oss-20b", "non-429 error skips the sibling Groq model");
+});
+
+await step("chat markdown: tables, bold, lists, no HTML", async () => {
+  const txt = (parts) => parts.map((p) => p.text).join("");
+  const b = MD.parseMarkdown("Here's who owes you:\n\n| Customer | Owed | Days overdue |\n|---|---:|:--:|\n| **Harbourside Lettings** | £1,645.00 | 28 |\n| Tom \\| Patel | £180 |\n\n- **Total:** £1,825\n2. chase <b>them</b>");
+  check(b[0].type === "p" && b[1].type === "gap", "intro paragraph then gap");
+  const t = b[2];
+  check(t.type === "table" && t.header.length === 3 && t.rows.length === 2, "table 3 cols x 2 rows");
+  check(t.align.join() === "left,right,center", `align ${t.align}`);
+  check(t.rows[0][0][0].kind === "bold" && t.rows[0][0][0].text === "Harbourside Lettings", "bold cell");
+  check(txt(t.rows[1][0]) === "Tom | Patel" && txt(t.rows[1][2]) === "", "escaped pipe, short row padded");
+  check(!b.some((x) => x.type === "p" && txt(x.inline).includes("|")), "no raw pipes left");
+  const li = b.filter((x) => x.type === "li");
+  check(li.length === 2 && li[0].marker === null && li[1].marker === "2.", "bullet + numbered");
+  check(li[0].inline[0].kind === "bold" && li[0].inline[0].text === "Total:", "bold in bullet");
+  check(txt(li[1].inline) === "chase <b>them</b>" && li[1].inline.every((p) => p.kind === "text"), "html kept as literal text");
+  const nt = MD.parseMarkdown("a | b\nnot a table");
+  check(nt.length === 2 && nt.every((x) => x.type === "p"), "pipes without separator stay text");
+  const nb = MD.parseMarkdown("Customer | Owed\n--- | ---\nSam | £5");
+  check(nb[0].type === "table" && nb[0].rows.length === 1, "table without outer pipes");
 });
 
 console.log(`\n${passes} checks passed, ${failures} failed`);
