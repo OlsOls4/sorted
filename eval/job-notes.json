@@ -1,0 +1,2149 @@
+{
+  "description": "50 hand-labelled UK tradesperson job notes for evaluating Sorted's notes-to-invoice parser. Amounts in GBP ex VAT; VAT 20% when vatEnabled. settings are the trader settings sent with each note.",
+  "labelConventions": [
+    "Labour is hours x the trader's hourly rate unless the notes give another hourly or day rate; multiple workers multiply hours.",
+    "Parts are one line per priced item the notes list separately.",
+    "A callout is its own line; 'no charge' items get no line.",
+    "VAT applies when the trader is VAT registered or the notes say plus/on top/+ VAT; 'no vat' turns it off.",
+    "VAT-inclusive prices are split so the total equals the quoted price.",
+    "An empty customer name is correct when the notes name nobody."
+  ],
+  "notes": [
+    {
+      "id": "n01",
+      "trade": "plumber",
+      "notes": "fixed leaking stopcock for mrs okafor at 12 cotham hill, 2.5 hrs plus new valve 18 quid, call out 45, vat on top, email ngozi.okafor@gmail.com",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Okafor"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2.5,
+            "unitAmount": 45,
+            "lineTotal": 112.5
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 18,
+            "lineTotal": 18.0
+          },
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 175.5,
+        "vat": 35.1,
+        "total": 210.6
+      },
+      "tags": [
+        "slang",
+        "vat-on-top",
+        "hours-default-rate"
+      ]
+    },
+    {
+      "id": "n02",
+      "trade": "plumber",
+      "notes": "Mr Patel 4 Ashley Down Rd - unblocked kitchen sink, 1hr, no vat. j.patel@hotmail.co.uk",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Patel"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 45.0,
+        "vat": 0.0,
+        "total": 45.0
+      },
+      "tags": [
+        "no-vat"
+      ]
+    },
+    {
+      "id": "n03",
+      "trade": "plumber",
+      "notes": "replaced toilet syphon at 33 Gloucester Rd for Sarah Jenkins, syphon was £22.50, 1.5 hours labour, sarah.jenkins@outlook.com",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Sarah Jenkins"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1.5,
+            "unitAmount": 45,
+            "lineTotal": 67.5
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 22.5,
+            "lineTotal": 22.5
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 90.0,
+        "vat": 0.0,
+        "total": 90.0
+      },
+      "tags": []
+    },
+    {
+      "id": "n04",
+      "trade": "plumber",
+      "notes": "emergency call out 85 for Harbourside Lettings Ltd, flat 3 burst pipe under sink, 2 hrs @ 60 out of hours, copper fittings 14 quid, accounts@harbourside-lettings.co.uk, plus vat",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Harbourside Lettings Ltd",
+          "Harbourside Lettings"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 85,
+            "lineTotal": 85.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 60,
+            "lineTotal": 120.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 14,
+            "lineTotal": 14.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 219.0,
+        "vat": 43.8,
+        "total": 262.8
+      },
+      "tags": [
+        "business",
+        "rate-override",
+        "vat-on-top",
+        "slang"
+      ]
+    },
+    {
+      "id": "n05",
+      "trade": "plumber",
+      "notes": "boiler serivce for mrs d wilkins, fixed price 85 quid, no vat",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs D Wilkins",
+          "Mrs Wilkins"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 85,
+            "lineTotal": 85.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 85.0,
+        "vat": 0.0,
+        "total": 85.0
+      },
+      "tags": [
+        "typo",
+        "fixed-price",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n06",
+      "trade": "plumber",
+      "notes": "fitted new kitchen tap for Tom at 9 Raleigh Rd, tap supplied by customer, 1.25 hrs",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Tom"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1.25,
+            "unitAmount": 45,
+            "lineTotal": 56.25
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 56.25,
+        "vat": 0.0,
+        "total": 56.25
+      },
+      "tags": [
+        "first-name-only",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n07",
+      "trade": "plumber",
+      "notes": "Mrs Hughes - radiator valves x2 £12 each, bleed rads, 2hrs, call out 45, she pays in 7 days",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Hughes"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 45,
+            "lineTotal": 90.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 2,
+            "unitAmount": 12,
+            "lineTotal": 24.0
+          },
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 159.0,
+        "vat": 0.0,
+        "total": 159.0
+      },
+      "tags": [
+        "quantity",
+        "terms"
+      ]
+    },
+    {
+      "id": "n08",
+      "trade": "plumber",
+      "notes": "power flushed system for the Coopers, 6 hours, chemicals 35, magnaclean filter 120, mark.cooper@btinternet.com",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "The Coopers",
+          "Coopers",
+          "Mark Cooper",
+          "Mr Cooper"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 6,
+            "unitAmount": 45,
+            "lineTotal": 270.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 35,
+            "lineTotal": 35.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 120,
+            "lineTotal": 120.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 425.0,
+        "vat": 0.0,
+        "total": 425.0
+      },
+      "tags": [
+        "bare-numbers",
+        "itemised-parts"
+      ]
+    },
+    {
+      "id": "n09",
+      "trade": "plumber",
+      "notes": "shower valve replaced. 3hrs. parts 65. no name yet, will text addresss later",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          ""
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 45,
+            "lineTotal": 135.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 65,
+            "lineTotal": 65.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 200.0,
+        "vat": 0.0,
+        "total": 200.0
+      },
+      "tags": [
+        "missing-customer",
+        "typo"
+      ],
+      "labelNote": "No customer in the notes: correct answer is an empty name"
+    },
+    {
+      "id": "n10",
+      "trade": "plumber",
+      "notes": "Clifton Village Cafe - fixed leak on dishwasher feed, 45 mins, washer and jubilee clip 6 quid, invoice to manager@cliftonvillagecafe.co.uk, + VAT",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Clifton Village Cafe"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 0.75,
+            "unitAmount": 45,
+            "lineTotal": 33.75
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 6,
+            "lineTotal": 6.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 39.75,
+        "vat": 7.95,
+        "total": 47.7
+      },
+      "tags": [
+        "business",
+        "minutes",
+        "vat-on-top"
+      ]
+    },
+    {
+      "id": "n11",
+      "trade": "electrician",
+      "notes": "Mr & Mrs Lewis, 14 Redland Grove. New consumer unit fitted, CU and breakers £210, 7 hrs labour, EICR cert 60, lewisfamily@gmail.com",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr & Mrs Lewis",
+          "Mr and Mrs Lewis"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 7,
+            "unitAmount": 50,
+            "lineTotal": 350.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 210,
+            "lineTotal": 210.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 60,
+            "lineTotal": 60.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 620.0,
+        "vat": 124.0,
+        "total": 744.0
+      },
+      "tags": [
+        "vat-registered-trader"
+      ],
+      "labelNote": "Trader is VAT registered, so VAT applies though the notes don't say"
+    },
+    {
+      "id": "n12",
+      "trade": "electrician",
+      "notes": "added 2 double sockets in kitchen for Jo Bloggs, cable and sockets 38, 3.5 hrs",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Jo Bloggs"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3.5,
+            "unitAmount": 50,
+            "lineTotal": 175.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 38,
+            "lineTotal": 38.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 213.0,
+        "vat": 42.6,
+        "total": 255.6
+      },
+      "tags": [
+        "vat-registered-trader",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n13",
+      "trade": "electrician",
+      "notes": "fault finding tripping RCD at Bristol Dental Surgery, call out 60, 1.5hrs, replaced faulty immersion element 28 quid, reception@bristoldental.co.uk",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Bristol Dental Surgery"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 60,
+            "lineTotal": 60.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 1.5,
+            "unitAmount": 50,
+            "lineTotal": 75.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 28,
+            "lineTotal": 28.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 163.0,
+        "vat": 32.6,
+        "total": 195.6
+      },
+      "tags": [
+        "business",
+        "vat-registered-trader"
+      ]
+    },
+    {
+      "id": "n14",
+      "trade": "electrician",
+      "notes": "landlord EICR for Avon Properties, 3 flats at 120 each, accounts@avonproperties.co.uk, net 30",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Avon Properties"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 3,
+            "unitAmount": 120,
+            "lineTotal": 360.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 360.0,
+        "vat": 72.0,
+        "total": 432.0
+      },
+      "tags": [
+        "business",
+        "per-unit-price",
+        "terms"
+      ]
+    },
+    {
+      "id": "n15",
+      "trade": "electrician",
+      "notes": "outdoor light + PIR for mrs khan, light was 45 quid, sundries 10, 2 hrs",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Khan"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 50,
+            "lineTotal": 100.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 10,
+            "lineTotal": 10.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 155.0,
+        "vat": 31.0,
+        "total": 186.0
+      },
+      "tags": [
+        "vat-registered-trader",
+        "itemised-parts"
+      ]
+    },
+    {
+      "id": "n16",
+      "trade": "electrician",
+      "notes": "EV charger install, Dr Ahmed Siddiqui, charger £499 supplied, install fixed price 350, a.siddiqui@icloud.com",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Dr Ahmed Siddiqui"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 499,
+            "lineTotal": 499.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 350,
+            "lineTotal": 350.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 849.0,
+        "vat": 169.8,
+        "total": 1018.8
+      },
+      "tags": [
+        "fixed-price",
+        "vat-registered-trader"
+      ]
+    },
+    {
+      "id": "n17",
+      "trade": "electrician",
+      "notes": "swapped 6 downlights to LED for Gary, 2hrs, lamps 6 x £8, cash job no vat",
+      "settings": {
+        "businessName": "Spark Bros Electrical Ltd",
+        "hourlyRate": 50,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Gary"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 50,
+            "lineTotal": 100.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 6,
+            "unitAmount": 8,
+            "lineTotal": 48.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 148.0,
+        "vat": 0.0,
+        "total": 148.0
+      },
+      "tags": [
+        "no-vat-override",
+        "quantity",
+        "first-name-only"
+      ],
+      "labelNote": "VAT-registered trader but notes say no VAT; labelled as the notes say"
+    },
+    {
+      "id": "n18",
+      "trade": "joiner",
+      "notes": "hung 3 internal doors for Mrs Bell at 2 Church Lane, 1 day @ 220, doors and hinges 285, door furniture 54",
+      "settings": {
+        "businessName": "Oakleaf Joinery",
+        "hourlyRate": 40,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Bell"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1,
+            "unitAmount": 220,
+            "lineTotal": 220.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 285,
+            "lineTotal": 285.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 54,
+            "lineTotal": 54.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 559.0,
+        "vat": 0.0,
+        "total": 559.0
+      },
+      "tags": [
+        "day-rate",
+        "itemised-parts"
+      ]
+    },
+    {
+      "id": "n19",
+      "trade": "joiner",
+      "notes": "fitted skirting in lounge + hall for Liam O'Connor, 2 days at 200 a day, timber £96.40, liam.oconnor@gmail.com",
+      "settings": {
+        "businessName": "Oakleaf Joinery",
+        "hourlyRate": 40,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Liam O'Connor"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 200,
+            "lineTotal": 400.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 96.4,
+            "lineTotal": 96.4
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 496.4,
+        "vat": 0.0,
+        "total": 496.4
+      },
+      "tags": [
+        "day-rate",
+        "pence"
+      ]
+    },
+    {
+      "id": "n20",
+      "trade": "joiner",
+      "notes": "built in wardrobe for Mr Ferguson, quoted 1.2k all in",
+      "settings": {
+        "businessName": "Oakleaf Joinery",
+        "hourlyRate": 40,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Ferguson"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 1200,
+            "lineTotal": 1200.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 1200.0,
+        "vat": 0.0,
+        "total": 1200.0
+      },
+      "tags": [
+        "k-shorthand",
+        "fixed-price",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n21",
+      "trade": "joiner",
+      "notes": "fixed sticking sash window + replaced cord, Ms Turner, 2hrs, sash cord 9 quid, call out 30",
+      "settings": {
+        "businessName": "Oakleaf Joinery",
+        "hourlyRate": 40,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Ms Turner"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 40,
+            "lineTotal": 80.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 9,
+            "lineTotal": 9.0
+          },
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 30,
+            "lineTotal": 30.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 119.0,
+        "vat": 0.0,
+        "total": 119.0
+      },
+      "tags": [
+        "slang"
+      ]
+    },
+    {
+      "id": "n22",
+      "trade": "joiner",
+      "notes": "decking repair for Kingswood Builders Ltd, 5 hrs, 6 boards @ 14.50, screws 12, plus vat, accounts@kingswoodbuilders.co.uk",
+      "settings": {
+        "businessName": "Oakleaf Joinery",
+        "hourlyRate": 40,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Kingswood Builders Ltd",
+          "Kingswood Builders"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 5,
+            "unitAmount": 40,
+            "lineTotal": 200.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 6,
+            "unitAmount": 14.5,
+            "lineTotal": 87.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 12,
+            "lineTotal": 12.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 299.0,
+        "vat": 59.8,
+        "total": 358.8
+      },
+      "tags": [
+        "business",
+        "quantity",
+        "vat-on-top"
+      ]
+    },
+    {
+      "id": "n23",
+      "trade": "cleaner",
+      "notes": "end of tenancy clean 14 Brook St for Bristol Lettings, 2 cleaners 5 hrs each, oven clean extra 45, invoices@bristollettings.co.uk",
+      "settings": {
+        "businessName": "Sparkle Clean Bristol",
+        "hourlyRate": 18,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Bristol Lettings"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 10,
+            "unitAmount": 18,
+            "lineTotal": 180.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 225.0,
+        "vat": 0.0,
+        "total": 225.0
+      },
+      "tags": [
+        "business",
+        "multiple-workers"
+      ],
+      "labelNote": "2 cleaners x 5 hrs = 10 labour hours"
+    },
+    {
+      "id": "n24",
+      "trade": "cleaner",
+      "notes": "weekly clean mrs patterson 3hrs + ironing basket, call it a score extra",
+      "settings": {
+        "businessName": "Sparkle Clean Bristol",
+        "hourlyRate": 18,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Patterson"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 18,
+            "lineTotal": 54.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 20,
+            "lineTotal": 20.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 74.0,
+        "vat": 0.0,
+        "total": 74.0
+      },
+      "tags": [
+        "slang-score",
+        "no-email"
+      ],
+      "labelNote": "'a score' = £20"
+    },
+    {
+      "id": "n25",
+      "trade": "cleaner",
+      "notes": "deep clean for Sophie Adams, 6.5 hrs, cleaning products 12 quid, sophie.adams@gmail.com",
+      "settings": {
+        "businessName": "Sparkle Clean Bristol",
+        "hourlyRate": 18,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Sophie Adams"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 6.5,
+            "unitAmount": 18,
+            "lineTotal": 117.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 12,
+            "lineTotal": 12.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 129.0,
+        "vat": 0.0,
+        "total": 129.0
+      },
+      "tags": []
+    },
+    {
+      "id": "n26",
+      "trade": "cleaner",
+      "notes": "office clean at Hartley & Sons, 4 hrs at £20/hr, carpet machine hire 35",
+      "settings": {
+        "businessName": "Sparkle Clean Bristol",
+        "hourlyRate": 18,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Hartley & Sons",
+          "Hartley and Sons"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 4,
+            "unitAmount": 20,
+            "lineTotal": 80.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 35,
+            "lineTotal": 35.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 115.0,
+        "vat": 0.0,
+        "total": 115.0
+      },
+      "tags": [
+        "business",
+        "rate-override",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n27",
+      "trade": "cleaner",
+      "notes": "carpet clean 3 rooms @ 40 a room + stairs 25, Mr Green",
+      "settings": {
+        "businessName": "Sparkle Clean Bristol",
+        "hourlyRate": 18,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Green"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 3,
+            "unitAmount": 40,
+            "lineTotal": 120.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 25,
+            "lineTotal": 25.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 145.0,
+        "vat": 0.0,
+        "total": 145.0
+      },
+      "tags": [
+        "per-unit-price",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n28",
+      "trade": "gardener",
+      "notes": "mowed lawns and trimmed hedges for Mrs Ellis 3hrs, green waste removal 20 quid",
+      "settings": {
+        "businessName": "Greenfingers Garden Care",
+        "hourlyRate": 25,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Ellis"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 25,
+            "lineTotal": 75.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 20,
+            "lineTotal": 20.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 95.0,
+        "vat": 0.0,
+        "total": 95.0
+      },
+      "tags": [
+        "waste",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n29",
+      "trade": "gardener",
+      "notes": "hedge cut + tip run for Mr Barker, 4.5 hrs, tip fee 30, petrol 8",
+      "settings": {
+        "businessName": "Greenfingers Garden Care",
+        "hourlyRate": 25,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Barker"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 4.5,
+            "unitAmount": 25,
+            "lineTotal": 112.5
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 30,
+            "lineTotal": 30.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 8,
+            "lineTotal": 8.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 150.5,
+        "vat": 0.0,
+        "total": 150.5
+      },
+      "tags": [
+        "waste",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n30",
+      "trade": "gardener",
+      "notes": "fence panels replaced for St Mary's Primary School, 3 panels @ 32, posts 4 x 15, 6 hrs, office@stmarys.bristol.sch.uk",
+      "settings": {
+        "businessName": "Greenfingers Garden Care",
+        "hourlyRate": 25,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "St Mary's Primary School"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 6,
+            "unitAmount": 25,
+            "lineTotal": 150.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 3,
+            "unitAmount": 32,
+            "lineTotal": 96.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 4,
+            "unitAmount": 15,
+            "lineTotal": 60.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 306.0,
+        "vat": 0.0,
+        "total": 306.0
+      },
+      "tags": [
+        "business",
+        "quantity"
+      ]
+    },
+    {
+      "id": "n31",
+      "trade": "gardener",
+      "notes": "garden tidy, 2 of us 4 hours, skip 220, customer: Karen Walsh",
+      "settings": {
+        "businessName": "Greenfingers Garden Care",
+        "hourlyRate": 25,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Karen Walsh"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 8,
+            "unitAmount": 25,
+            "lineTotal": 200.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 220,
+            "lineTotal": 220.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 420.0,
+        "vat": 0.0,
+        "total": 420.0
+      },
+      "tags": [
+        "multiple-workers",
+        "label",
+        "no-email"
+      ],
+      "labelNote": "2 people x 4 hrs = 8 labour hours"
+    },
+    {
+      "id": "n32",
+      "trade": "gardener",
+      "notes": "monthly maintenance contract Riverside Hotel, 85 quid, plus vat this time as we're now vat reg",
+      "settings": {
+        "businessName": "Greenfingers Garden Care",
+        "hourlyRate": 25,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Riverside Hotel"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 85,
+            "lineTotal": 85.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 85.0,
+        "vat": 17.0,
+        "total": 102.0
+      },
+      "tags": [
+        "business",
+        "vat-on-top",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n33",
+      "trade": "decorator",
+      "notes": "painted lounge & hallway for mrs abbott, 3 days @ £180, paint 3 tins dulux 42 each, sundries 15",
+      "settings": {
+        "businessName": "Fresh Coat Decorating",
+        "hourlyRate": 30,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Abbott"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 180,
+            "lineTotal": 540.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 3,
+            "unitAmount": 42,
+            "lineTotal": 126.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 15,
+            "lineTotal": 15.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 681.0,
+        "vat": 0.0,
+        "total": 681.0
+      },
+      "tags": [
+        "day-rate",
+        "quantity",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n34",
+      "trade": "decorator",
+      "notes": "wallpapered feature wall, Mr Hassan, 2 n half hrs, paper supplied, sizing + paste 11",
+      "settings": {
+        "businessName": "Fresh Coat Decorating",
+        "hourlyRate": 30,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Hassan"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 2.5,
+            "unitAmount": 30,
+            "lineTotal": 75.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 11,
+            "lineTotal": 11.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 86.0,
+        "vat": 0.0,
+        "total": 86.0
+      },
+      "tags": [
+        "slang-hours",
+        "no-email"
+      ],
+      "labelNote": "'2 n half hrs' = 2.5 hours"
+    },
+    {
+      "id": "n35",
+      "trade": "decorator",
+      "notes": "gloss woodwork whole house for Greenway Estates, fixed price 950 + vat, accounts@greenwayestates.co.uk",
+      "settings": {
+        "businessName": "Fresh Coat Decorating",
+        "hourlyRate": 30,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Greenway Estates"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 950,
+            "lineTotal": 950.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 950.0,
+        "vat": 190.0,
+        "total": 1140.0
+      },
+      "tags": [
+        "business",
+        "fixed-price",
+        "vat-on-top"
+      ]
+    },
+    {
+      "id": "n36",
+      "trade": "decorator",
+      "notes": "ceiling repaint after leak, insurance job for Mrs Donovan, 1 day at 200, materials 34.80",
+      "settings": {
+        "businessName": "Fresh Coat Decorating",
+        "hourlyRate": 30,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Donovan"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1,
+            "unitAmount": 200,
+            "lineTotal": 200.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 34.8,
+            "lineTotal": 34.8
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 234.8,
+        "vat": 0.0,
+        "total": 234.8
+      },
+      "tags": [
+        "day-rate",
+        "pence",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n37",
+      "trade": "decorator",
+      "notes": "exterior painting 4 days @ 190/day, scaffold tower hire 120, masonry paint 6 x 38, Mr and Mrs Kowalski, kowalski.home@gmail.com",
+      "settings": {
+        "businessName": "Fresh Coat Decorating",
+        "hourlyRate": 30,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr and Mrs Kowalski",
+          "Mr & Mrs Kowalski"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 4,
+            "unitAmount": 190,
+            "lineTotal": 760.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 120,
+            "lineTotal": 120.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 6,
+            "unitAmount": 38,
+            "lineTotal": 228.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 1108.0,
+        "vat": 0.0,
+        "total": 1108.0
+      },
+      "tags": [
+        "day-rate",
+        "quantity"
+      ]
+    },
+    {
+      "id": "n38",
+      "trade": "roofer",
+      "notes": "replaced 8 slipped tiles for Mr Wright, 3hrs, tiles 8 x 4.50, call out 50",
+      "settings": {
+        "businessName": "Topline Roofing Ltd",
+        "hourlyRate": 40,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Wright"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 40,
+            "lineTotal": 120.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 8,
+            "unitAmount": 4.5,
+            "lineTotal": 36.0
+          },
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 50,
+            "lineTotal": 50.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 206.0,
+        "vat": 41.2,
+        "total": 247.2
+      },
+      "tags": [
+        "vat-registered-trader",
+        "quantity",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n39",
+      "trade": "roofer",
+      "notes": "gutter clear 2 houses for Bath Road Housing Assoc, £65 per house, invoices@bathroadhousing.org.uk",
+      "settings": {
+        "businessName": "Topline Roofing Ltd",
+        "hourlyRate": 40,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Bath Road Housing Assoc",
+          "Bath Road Housing Association"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 2,
+            "unitAmount": 65,
+            "lineTotal": 130.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 130.0,
+        "vat": 26.0,
+        "total": 156.0
+      },
+      "tags": [
+        "business",
+        "per-unit-price"
+      ]
+    },
+    {
+      "id": "n40",
+      "trade": "roofer",
+      "notes": "flat roof re-felt garage, quoted 1450 inc vat, Mrs Lloyd",
+      "settings": {
+        "businessName": "Topline Roofing Ltd",
+        "hourlyRate": 40,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Lloyd"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 1208.33,
+            "lineTotal": 1208.33
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 1208.33,
+        "vat": 241.67,
+        "total": 1450.0
+      },
+      "tags": [
+        "vat-inclusive",
+        "fixed-price",
+        "no-email"
+      ],
+      "labelNote": "Price includes VAT: ex-VAT 1208.33 + VAT 241.67 = 1450.00"
+    },
+    {
+      "id": "n41",
+      "trade": "locksmith",
+      "notes": "lock out at 11pm, Ms Rivera, call out 90 (out of hours), 30 mins, new euro cylinder £35",
+      "settings": {
+        "businessName": "Keyway Locksmiths",
+        "hourlyRate": 60,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Ms Rivera"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 90,
+            "lineTotal": 90.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 0.5,
+            "unitAmount": 60,
+            "lineTotal": 30.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 35,
+            "lineTotal": 35.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 155.0,
+        "vat": 0.0,
+        "total": 155.0
+      },
+      "tags": [
+        "minutes",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n42",
+      "trade": "locksmith",
+      "notes": "upvc door mech replaced for Mr Osei, gearbox 65 quid, 1 hr labour, no vat",
+      "settings": {
+        "businessName": "Keyway Locksmiths",
+        "hourlyRate": 60,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Osei"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 1,
+            "unitAmount": 60,
+            "lineTotal": 60.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 65,
+            "lineTotal": 65.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 125.0,
+        "vat": 0.0,
+        "total": 125.0
+      },
+      "tags": [
+        "no-vat",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n43",
+      "trade": "heating engineer",
+      "notes": "gas safety cert x 4 properties for Clarke Property Management, 65 each, plus 1 boiler repair at no 4: 2hrs and a fan £145, accounts@clarkepm.co.uk",
+      "settings": {
+        "businessName": "Warmhome Gas Services Ltd",
+        "hourlyRate": 55,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Clarke Property Management"
+        ],
+        "customerType": "business",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 4,
+            "unitAmount": 65,
+            "lineTotal": 260.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 55,
+            "lineTotal": 110.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 145,
+            "lineTotal": 145.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 515.0,
+        "vat": 103.0,
+        "total": 618.0
+      },
+      "tags": [
+        "business",
+        "quantity",
+        "vat-registered-trader"
+      ]
+    },
+    {
+      "id": "n44",
+      "trade": "heating engineer",
+      "notes": "new combi installed Mrs Ogunleye, worcester boiler £1,350, flue kit 95, 2 days at 280/day, ogunleye.f@yahoo.co.uk",
+      "settings": {
+        "businessName": "Warmhome Gas Services Ltd",
+        "hourlyRate": 55,
+        "vatRegistered": true,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs Ogunleye"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 1350,
+            "lineTotal": 1350.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 95,
+            "lineTotal": 95.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 2,
+            "unitAmount": 280,
+            "lineTotal": 560.0
+          }
+        ],
+        "vatEnabled": true,
+        "subtotal": 2005.0,
+        "vat": 401.0,
+        "total": 2406.0
+      },
+      "tags": [
+        "day-rate",
+        "thousands-comma",
+        "vat-registered-trader"
+      ]
+    },
+    {
+      "id": "n45",
+      "trade": "tiler",
+      "notes": "tiled bathroom floor for Hannah, 6hrs, adhesive and grout 28, tiles customer bought, hannah.price@gmail.com",
+      "settings": {
+        "businessName": "Square Edge Tiling",
+        "hourlyRate": 35,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Hannah",
+          "Hannah Price"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 6,
+            "unitAmount": 35,
+            "lineTotal": 210.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 28,
+            "lineTotal": 28.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 238.0,
+        "vat": 0.0,
+        "total": 238.0
+      },
+      "tags": [
+        "first-name-only"
+      ]
+    },
+    {
+      "id": "n46",
+      "trade": "tiler",
+      "notes": "splashback in kitchen 2.5 sq m @ 45 per sq m, mr dobson, trims £16",
+      "settings": {
+        "businessName": "Square Edge Tiling",
+        "hourlyRate": 35,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mr Dobson"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 2.5,
+            "unitAmount": 45,
+            "lineTotal": 112.5
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 16,
+            "lineTotal": 16.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 128.5,
+        "vat": 0.0,
+        "total": 128.5
+      },
+      "tags": [
+        "per-unit-price",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n47",
+      "trade": "window cleaner",
+      "notes": "windows 6 houses on Elm Close at 15 each, conservatory roof extra 25 at no 6",
+      "settings": {
+        "businessName": "Crystal Clear Windows",
+        "hourlyRate": 20,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          ""
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "other",
+            "quantity": 6,
+            "unitAmount": 15,
+            "lineTotal": 90.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 25,
+            "lineTotal": 25.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 115.0,
+        "vat": 0.0,
+        "total": 115.0
+      },
+      "tags": [
+        "missing-customer",
+        "per-unit-price"
+      ],
+      "labelNote": "No single customer named: correct answer is an empty name"
+    },
+    {
+      "id": "n48",
+      "trade": "handyman",
+      "notes": "flatpack assembly 2 wardrobes + chest of drawers for Priya, 4hrs, tv wall mount fitted 40 fixed",
+      "settings": {
+        "businessName": "Fixit Handyman Services",
+        "hourlyRate": 35,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Priya"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 4,
+            "unitAmount": 35,
+            "lineTotal": 140.0
+          },
+          {
+            "kind": "other",
+            "quantity": 1,
+            "unitAmount": 40,
+            "lineTotal": 40.0
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 180.0,
+        "vat": 0.0,
+        "total": 180.0
+      },
+      "tags": [
+        "first-name-only",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n49",
+      "trade": "handyman",
+      "notes": "bits n bobs for mrs o'brien - curtain poles, shelf, bathroom silicone. 3 hrs. sealant n rawlplugs 9.60",
+      "settings": {
+        "businessName": "Fixit Handyman Services",
+        "hourlyRate": 35,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Mrs O'Brien"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "labour",
+            "quantity": 3,
+            "unitAmount": 35,
+            "lineTotal": 105.0
+          },
+          {
+            "kind": "parts",
+            "quantity": 1,
+            "unitAmount": 9.6,
+            "lineTotal": 9.6
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 114.6,
+        "vat": 0.0,
+        "total": 114.6
+      },
+      "tags": [
+        "slang",
+        "pence",
+        "no-email"
+      ]
+    },
+    {
+      "id": "n50",
+      "trade": "plumber",
+      "notes": "Kevin @ No.7 - leaking rad, call out 45, 30min, no charge for the valve, pays cash",
+      "settings": {
+        "businessName": "Dave Harris Plumbing & Heating",
+        "hourlyRate": 45,
+        "vatRegistered": false,
+        "vatRate": 20,
+        "paymentTermsDays": 14,
+        "calloutFee": 0
+      },
+      "expected": {
+        "customerNames": [
+          "Kevin"
+        ],
+        "customerType": "consumer",
+        "items": [
+          {
+            "kind": "callout",
+            "quantity": 1,
+            "unitAmount": 45,
+            "lineTotal": 45.0
+          },
+          {
+            "kind": "labour",
+            "quantity": 0.5,
+            "unitAmount": 45,
+            "lineTotal": 22.5
+          }
+        ],
+        "vatEnabled": false,
+        "subtotal": 67.5,
+        "vat": 0.0,
+        "total": 67.5
+      },
+      "tags": [
+        "first-name-only",
+        "minutes",
+        "no-charge"
+      ],
+      "labelNote": "'no charge for the valve' = no parts line"
+    }
+  ]
+}
