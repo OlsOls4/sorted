@@ -3,7 +3,7 @@
 // in localStorage and sends the relevant invoice(s) with each mutating request.
 
 import "server-only";
-import { computeTotals, isOpen, isoTimestamp, round2, todayISO } from "./format";
+import { computeTotals, demoPayLink, isOpen, isoTimestamp, round2, todayISO } from "./format";
 import { PayPalClient, PayPalError, hasIssue, isSandbox, paypalConfigFromEnv, paypalConfigFromHeaders, type PayPalConfig } from "./paypal/client";
 import { draftToPayPal, payPalToInvoice } from "./paypal/mapping";
 import { runToolkitTool } from "./paypal/toolkit";
@@ -76,8 +76,7 @@ class MockBackend implements InvoiceBackend {
       amountPaid: 0,
       issueDate: draft.issueDate,
       dueDate: draft.dueDate,
-      payerViewUrl: `https://www.sandbox.paypal.com/invoice/p/#${id}`,
-      merchantViewUrl: `https://www.sandbox.paypal.com/invoice/details/${id}`,
+      payerViewUrl: demoPayLink(id),
       reminders: [],
       source: "mock",
     };

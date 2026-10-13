@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/client";
-import { balance, daysOverdue, gbp, ukDate } from "@/lib/format";
+import { balance, daysOverdue, gbp, payLaterEligible, ukDate } from "@/lib/format";
 import { suggestStage } from "@/lib/ledger";
 import type { EngineInfo, Invoice, Mode, ReminderDraft, ReminderStage, Settings } from "@/lib/types";
 import { EngineBadge, Modal, PayPalMark, Spinner, StageBadge } from "./ui";
@@ -136,6 +136,25 @@ export function ReminderModal({
       <input id="rs" className="input mb-3 disabled:bg-paper" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={loading} placeholder={loading ? "Drafting…" : ""} />
       <label className="label" htmlFor="rb">Message</label>
       <textarea id="rb" className="input min-h-[260px] font-[inherit] leading-relaxed disabled:bg-paper disabled:text-muted" value={body} onChange={(e) => setBody(e.target.value)} disabled={loading} placeholder={loading ? "Drafting your reminder…" : ""} />
+
+      {!loading && body && (
+        <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+          {invoice.payerViewUrl && body.includes(invoice.payerViewUrl) && (
+            <span className="rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-pp-2 ring-1 ring-sky-600/20">✓ PayPal pay link included</span>
+          )}
+          {payLaterEligible(invoice) && /pay in 3/i.test(body) && (
+            <span className="rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-pp-2 ring-1 ring-sky-600/20">Pay in 3 mentioned (eligible customers)</span>
+          )}
+          {stage === "final" && legal?.applies && /waive/i.test(body) && (
+            <span className="rounded-full bg-violet-50 px-2 py-0.5 font-semibold text-violet-800 ring-1 ring-violet-600/20">Pay today: interest waived</span>
+          )}
+          {invoice.payerViewUrl && (
+            <a className="rounded-full px-2 py-0.5 font-semibold text-pp-2 underline" href={invoice.payerViewUrl} target="_blank" rel="noreferrer">
+              Preview what your customer sees ↗
+            </a>
+          )}
+        </div>
+      )}
 
       {legal && stage === "final" && (
         <div className={`mt-3 rounded-xl px-3 py-2 text-xs ${legal.applies ? "bg-violet-50 text-violet-800" : "bg-paper text-muted"}`}>

@@ -1,6 +1,7 @@
 "use client";
 // Browser-side API helpers + localStorage persistence.
 
+import { demoPayLink } from "./format";
 import { seedInvoices } from "./seed";
 import { DEFAULT_SETTINGS, type Invoice, type Mode, type Settings } from "./types";
 
@@ -39,7 +40,8 @@ export const storage = {
   saveSettings: (s: Settings) => write(K.settings, s),
   loadDemoLedger: (rate: number): Invoice[] => {
     const l = read<Invoice[] | null>(K.ledger, null);
-    if (l && Array.isArray(l) && l.length) return l;
+    // Older saved demo ledgers pointed at a fake PayPal URL; use the mock payer page instead.
+    if (l && Array.isArray(l) && l.length) return l.map((i) => (i.source === "mock" ? { ...i, payerViewUrl: demoPayLink(i.id), merchantViewUrl: undefined } : i));
     const seeded = seedInvoices(rate);
     write(K.ledger, seeded);
     return seeded;

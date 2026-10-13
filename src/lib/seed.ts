@@ -1,7 +1,7 @@
 // Seeded demo ledger: a Bristol plumbing & heating sole trader's last ~4 months.
 // Dates are relative to "today" so overdue/aging always looks realistic.
 
-import { addDays, computeTotals, todayISO } from "./format";
+import { addDays, computeTotals, demoPayLink, todayISO } from "./format";
 import type { CustomerType, Invoice, InvoiceStatus, LineItem, ReminderLog } from "./types";
 
 interface SeedRow {
@@ -75,8 +75,7 @@ export function seedInvoices(rate = 45, today = todayISO()): Invoice[] {
       issueDate,
       dueDate,
       paidDate,
-      payerViewUrl: `https://www.sandbox.paypal.com/invoice/p/#${id}`,
-      merchantViewUrl: `https://www.sandbox.paypal.com/invoice/details/${id}`,
+      payerViewUrl: demoPayLink(id),
       reminders: (r.reminders ?? []).map((rm) => ({
         sentAt: `${addDays(dueDate, rm.daysAfterDue)}T09:30:00.000Z`,
         stage: rm.stage,

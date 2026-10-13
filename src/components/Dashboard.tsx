@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { PaymentEvent } from "@/lib/events";
 import { gbp } from "@/lib/format";
 import { totals } from "@/lib/ledger";
 import type { EngineInfo, Invoice, InvoiceDraft, PendingAction, ReminderStage } from "@/lib/types";
 import { AskSorted } from "./AskSorted";
+import { InvoiceDetails } from "./InvoiceDetails";
 import { InvoiceEditor } from "./InvoiceEditor";
 import { JobNotes } from "./JobNotes";
 import { LedgerGrid } from "./LedgerGrid";
@@ -25,6 +27,21 @@ export function Dashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const viewing = viewingId ? (c.invoices.find((i) => i.id === viewingId) ?? null) : null;
+  const onOpen = useCallback((inv: Invoice) => setViewingId(inv.id), []);
+
+  // Demo: the mock PayPal payer page (/pay/<id>, another tab) announces payments here,
+  // the same way the INVOICING.INVOICE.PAID webhook does in live mode.
+  const { reportEvents } = c;
+  useEffect(() => {
+    if (typeof BroadcastChannel === "undefined") return;
+    const ch = new BroadcastChannel("sorted-pay");
+    ch.onmessage = (m: MessageEvent<PaymentEvent>) => {
+      if (m.data?.invoiceId) reportEvents([m.data]);
+    };
+    return () => ch.close();
+  }, [reportEvents]);
 
   const kpi = useMemo(() => totals(c.invoices), [c.invoices]);
   const onRemind = useCallback((inv: Invoice) => setReminding({ inv }), []);
@@ -150,7 +167,7 @@ export function Dashboard() {
               </div>
             </div>
 
-            <LedgerGrid invoices={c.invoices} onRemind={onRemind} onMarkPaid={onMarkPaid} loading={c.syncing && c.invoices.length === 0} />
+            <LedgerGrid invoices={c.invoices} onRemind={onRemind} onMarkPaid={onMarkPaid} onOpen={onOpen} loading={c.syncing && c.invoices.length === 0} />
           </>
         )}
       </main>
@@ -166,8 +183,24 @@ export function Dashboard() {
             // Approvals are single-use: a retry after an error mints a fresh one.
             const t = editing.approval;
             setEditing((e) => (e ? { ...e, approval: undefined } : e));
-            await c.createInvoice(d, t);
+            const created = await c.createInvoice(d, t);
             setEditing(null);
+            setViewingId(created.id); // show the pay link + QR the customer just got
+          }}
+        />
+      )}
+      {viewing && (
+        <InvoiceDetails
+          invoice={viewing}
+          mode={c.mode}
+          onClose={() => setViewingId(null)}
+          onRemind={(inv) => {
+            setViewingId(null);
+            setReminding({ inv });
+          }}
+          onMarkPaid={(inv) => {
+            setViewingId(null);
+            setConfirmPaid(inv);
           }}
         />
       )}

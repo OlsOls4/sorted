@@ -104,3 +104,22 @@ export function uid(prefix = ""): string {
   const r = Math.random().toString(36).slice(2, 10);
   return `${prefix}${Date.now().toString(36)}${r}`;
 }
+
+// ---- Pay links ----
+
+/** Public site URL, used for the demo's mock payer page (/pay/<id>) in reminders and QR codes. */
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://sorted-paypal.vercel.app").replace(/\/$/, "");
+
+/** Demo invoices point at Sorted's mock PayPal payer page; real ones use PayPal's recipient_view_url. */
+export function demoPayLink(id: string): string {
+  return `${SITE_URL}/pay/${encodeURIComponent(id)}`;
+}
+
+/** PayPal Pay in 3 range for UK buyers (PayPal UK: eligible purchases £20 to £3,000, subject to status). */
+export const PAY_IN_3 = { min: 20, max: 3000 };
+
+/** True when a private customer's balance is in the Pay in 3 range. Eligibility is still PayPal's call. */
+export function payLaterEligible(inv: Pick<Invoice, "customerType" | "total" | "amountPaid">): boolean {
+  const due = round2(inv.total - inv.amountPaid);
+  return inv.customerType === "consumer" && due >= PAY_IN_3.min && due <= PAY_IN_3.max;
+}

@@ -119,7 +119,7 @@ export function AskSorted({
                       <img src={m.meta.qr.dataUrl} alt={`PayPal QR code to pay ${m.meta.qr.invoiceNumber}`} width={160} height={160} />
                       <figcaption className="mt-1 text-[11px] text-muted">
                         Scan to pay {m.meta.qr.invoiceNumber}
-                        {m.meta.qr.payerViewUrl && m.meta.qr.via === "paypal-agent-toolkit" ? (
+                        {m.meta.qr.payerViewUrl ? (
                           <>
                             {" · "}
                             <a className="underline" href={m.meta.qr.payerViewUrl} target="_blank" rel="noreferrer">

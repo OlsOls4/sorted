@@ -55,6 +55,8 @@ interface Props {
   invoices: Invoice[];
   onRemind: (inv: Invoice) => void;
   onMarkPaid: (inv: Invoice) => void;
+  /** Opens the invoice details (pay link preview, QR code). */
+  onOpen?: (inv: Invoice) => void;
   loading?: boolean;
 }
 
@@ -183,7 +185,7 @@ function RemindersCell(p: ICellRendererParams<Row>) {
   );
 }
 
-function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]; onMarkPaid: Props["onMarkPaid"] }) {
+function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]; onMarkPaid: Props["onMarkPaid"]; onOpen?: Props["onOpen"] }) {
   const r = p.data;
   if (!r || r._pinned) return null;
   const open = isOpen(r) && r._balance > 0;
@@ -213,7 +215,17 @@ function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]
           Paid
         </button>
       )}
-      {link && (
+      {p.onOpen ? (
+        <button
+          type="button"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-pp-2 hover:bg-sky-50"
+          onClick={() => p.onOpen!(r)}
+          title="Pay link, QR code and what your customer sees"
+          aria-label={`Open ${r.number}: pay link and QR code`}
+        >
+          <PayPalMark />
+        </button>
+      ) : link && (
         <a
           className="flex h-7 w-7 items-center justify-center rounded-lg text-pp-2 hover:bg-sky-50"
           href={link}
@@ -225,7 +237,7 @@ function ActionsCell(p: ICellRendererParams<Row> & { onRemind: Props["onRemind"]
           <PayPalMark />
         </a>
       )}
-      {!open && !link && <span className="text-xs text-muted">—</span>}
+      {!open && !link && !p.onOpen && <span className="text-xs text-muted">—</span>}
     </div>
   );
 }
@@ -247,7 +259,7 @@ function NoRowsOverlay(p: { emptyRef: { current: boolean } }) {
 
 // ---------- grid ----------
 
-export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: Props) {
+export function LedgerGrid({ invoices, onRemind, onMarkPaid, onOpen, loading = false }: Props) {
   const apiRef = useRef<GridApi<Row> | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const emptyRef = useRef(invoices.length === 0);
@@ -412,7 +424,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: 
         headerName: "",
         colId: "actions",
         cellRenderer: ActionsCell,
-        cellRendererParams: { onRemind, onMarkPaid },
+        cellRendererParams: { onRemind, onMarkPaid, onOpen },
         width: ACTIONS_W,
         minWidth: ACTIONS_W,
         sortable: false,
@@ -423,7 +435,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: 
         lockPinned: true,
       },
     ],
-    [onRemind, onMarkPaid],
+    [onRemind, onMarkPaid, onOpen],
   );
 
   const defaultColDef = useMemo<ColDef<Row>>(() => ({ sortable: true, resizable: true, floatingFilter: false, suppressHeaderMenuButton: true }), []);

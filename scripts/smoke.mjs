@@ -65,6 +65,12 @@ const consumer = list.invoices.find((i) => i.customerType === "consumer" && i.st
 const rem2 = await post("/api/reminders/draft", { invoice: consumer, stage: "final" });
 ok(!/Late Payment of Commercial Debts/.test(rem2.json.draft?.body), "reminder: consumer final notice does NOT cite the Act");
 
+ok(rem.json.draft?.body?.includes(overdueBiz.payerViewUrl) && /waive/i.test(rem.json.draft?.body ?? ""), "reminder: B2B final notice has the PayPal pay link and the pay-today interest waiver");
+ok(rem2.json.draft?.body?.includes(consumer.payerViewUrl) && (consumer.total - consumer.amountPaid < 20 || /pay in 3/i.test(rem2.json.draft?.body ?? "")), "reminder: private customer gets the pay link and a hedged Pay in 3 mention");
+const qrRes = await post(`/api/invoices/${encodeURIComponent(consumer.id)}/qr`, { invoice: { id: consumer.id } });
+ok(/^data:image\/png;base64,/.test(qrRes.json.dataUrl ?? ""), "QR code for an invoice's pay link");
+const payPage = await fetch(`${B}/pay/${encodeURIComponent(consumer.id)}`);
+ok(payPage.status === 200, "customer view: mock payer page renders");
 const sent = await post(`/api/invoices/${encodeURIComponent(overdueBiz.id)}/remind`, { invoice: overdueBiz, subject: rem.json.draft.subject, body: rem.json.draft.body });
 ok(sent.json.invoice?.reminders?.length === overdueBiz.reminders.length + 1, "remind: logged on invoice");
 
