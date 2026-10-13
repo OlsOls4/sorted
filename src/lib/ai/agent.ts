@@ -297,6 +297,7 @@ function systemPrompt(ctx: AgentContext) {
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
 Always use tools to get numbers — never guess figures. "Latest payer" means the customer who pays latest/slowest.
 For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps OK in the app, so tell them to review and confirm.
+"Chase X", "chase my worst payer" or "remind X" is a request to act: find the customer (rank_payers or list_invoices if needed) and then call send_invoice_reminder in the same turn, rather than stopping to ask whether to send one.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
 }
 
