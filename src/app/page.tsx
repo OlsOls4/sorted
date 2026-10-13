@@ -13,12 +13,12 @@ const STEPS = [
   {
     k: "1",
     h: "Say what you did",
-    p: "“Fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she’s at patel.r@example.com.” Type it in the van or just say it.",
+    p: "“Stopcock for Mrs Okafor, 2.5 hrs, new valve 18 quid, call out 45, vat on top.” Type it in the van or just say it.",
   },
   {
     k: "2",
     h: "Sorted writes the invoice",
-    p: "AI pulls out the customer, hours at your rate, parts and terms. You check it, tweak it, and send it through PayPal in one tap.",
+    p: "AI pulls out the customer, labour at your rate, parts, call-out, VAT and terms. You check it, tweak it, and send it through PayPal in one tap.",
   },
   {
     k: "3",
@@ -58,39 +58,51 @@ export default function Home() {
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link href="/app" className="btn-primary px-6 py-3 text-base">
-              Open the dashboard →
+              Try the live demo →
             </Link>
             <a href="#how" className="btn-ghost px-6 py-3 text-base">
               See how it works
             </a>
           </div>
-          <p className="mt-3 text-xs text-muted">No sign-up. The demo runs on sample data with a mock PayPal backend.</p>
+          <p className="mt-3 text-xs text-muted">No sign-up. The demo opens on a Bristol plumber&apos;s sample ledger with a mock PayPal, or paste your own PayPal sandbox keys to go live.</p>
         </div>
 
         <div className="relative">
           <div className="absolute -inset-4 -z-10 rounded-[2rem] bg-gradient-to-br from-brand-soft via-white to-sky-50" />
           <div className="card p-5">
             <div className="text-xs font-semibold text-muted uppercase">Job notes</div>
-            <p className="mt-1 rounded-xl bg-paper p-3 font-mono text-sm">fitted 2 radiators for Mrs Patel, 4 hrs, parts £86, she&apos;s at patel.r@example.com</p>
-            <div className="my-3 text-center text-brand">✦ Sorted ↓</div>
+            <p className="mt-1 rounded-xl bg-paper p-3 font-mono text-sm leading-relaxed">
+              fixed leaking stopcock for mrs okafor, 2.5 hrs plus new valve 18 quid, call out 45, pays in 14 days, vat on top
+            </p>
+            <div className="my-3 text-center text-sm font-semibold text-brand" aria-hidden="true">
+              ✦ Sorted ↓
+            </div>
             <div className="rounded-xl border border-line p-3 text-sm">
               <div className="flex justify-between font-semibold">
-                <span>Mrs Patel</span>
+                <span>Mrs Okafor</span>
                 <span className="text-muted">due in 14 days</span>
               </div>
               <div className="mt-2 flex justify-between text-ink-2">
-                <span>Labour — 4 hrs × £45</span>
-                <span>£180.00</span>
+                <span>Labour, 2.5 hrs × £45</span>
+                <span className="tabular-nums">£112.50</span>
               </div>
               <div className="flex justify-between text-ink-2">
-                <span>Parts &amp; materials</span>
-                <span>£86.00</span>
+                <span>New valve</span>
+                <span className="tabular-nums">£18.00</span>
+              </div>
+              <div className="flex justify-between text-ink-2">
+                <span>Call-out</span>
+                <span className="tabular-nums">£45.00</span>
+              </div>
+              <div className="flex justify-between text-muted">
+                <span>VAT 20%</span>
+                <span className="tabular-nums">£35.10</span>
               </div>
               <div className="mt-2 flex justify-between border-t border-line pt-2 text-base font-extrabold">
                 <span>Total</span>
-                <span>£266.00</span>
+                <span className="tabular-nums">£210.60</span>
               </div>
-              <div className="mt-3 rounded-lg bg-pp py-2 text-center text-sm font-semibold text-white">Send via PayPal</div>
+              <div className="mt-3 rounded-lg bg-pp py-2 text-center text-sm font-semibold text-white">Send £210.60 invoice via PayPal</div>
             </div>
           </div>
         </div>
