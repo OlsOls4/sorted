@@ -249,7 +249,7 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
       const out = await runTool(call.name, call.args, ctx, false);
       trace.push(out.trace);
       if (out.pending) pending = out.pending;
-      convo.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(out.result).slice(0, 12000) });
+      convo.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(out.result).slice(0, 6000) });
     }
     if (pending) {
       const lead = res.text.trim();

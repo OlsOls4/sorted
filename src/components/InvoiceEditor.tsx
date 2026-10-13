@@ -51,7 +51,11 @@ export function InvoiceEditor({
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted">
         <span>Drafted by</span>
         <EngineBadge engine={engine} />
-        {aiError && <span className="text-warn">(AI unavailable, used rules: {aiError.slice(0, 80)})</span>}
+        {aiError && (
+          <span className="text-warn" title={aiError}>
+            ({aiError.split(" [")[0]})
+          </span>
+        )}
       </div>
 
       {!!d.warnings?.length && (

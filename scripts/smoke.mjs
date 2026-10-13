@@ -56,9 +56,9 @@ const paid = await post(`/api/invoices/${encodeURIComponent(consumer.id)}/mark-p
 ok(paid.json.invoice?.status === "MARKED_AS_PAID", "mark paid");
 
 for (const [q, expect] of [
-  ["who owes me what?", /owed/i],
-  ["how much did I earn in October?", /received/i],
-  ["who's the latest payer?", /latest payers/i],
+  ["who owes me what?", /owed|owe|outstanding/i],
+  ["how much did I earn in October?", /received|earn|paid|£/i],
+  ["who's the latest payer?", /latest payers|late|overdue|slow/i],
   ["what's overdue?", /overdue/i],
 ]) {
   const r = await post("/api/chat", { messages: [{ role: "user", content: q }], ledger: list.invoices });

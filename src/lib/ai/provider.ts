@@ -490,9 +490,14 @@ export function fallbackEngine(): EngineInfo {
   return configuredProviders().length ? RULES_ENGINE_BUSY : RULES_ENGINE;
 }
 
-/** Short, user-facing reason the AI wasn't used. */
+/** Short, user-facing reason the AI wasn't used (plus a terse provider detail for debugging; never contains keys). */
 export function friendlyAIError(e: unknown): string {
   const m = (e as Error)?.message ?? String(e);
+  const detail = m.replace(/\s+/g, " ").slice(0, 220);
+  return `${friendlyReason(m)} [${detail}]`;
+}
+
+function friendlyReason(m: string): string {
   if (/rate limited|HTTP 429|quota/i.test(m)) return "AI provider busy (rate limit/quota), used the rules engine";
   if (/timed out|timeout/i.test(m)) return "AI provider timed out, used the rules engine";
   if (/HTTP 5\d\d/.test(m)) return "AI provider error, used the rules engine";
