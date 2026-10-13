@@ -493,7 +493,11 @@ export function fallbackEngine(): EngineInfo {
 /** Short, user-facing reason the AI wasn't used (plus a terse provider detail for debugging; never contains keys). */
 export function friendlyAIError(e: unknown): string {
   const m = (e as Error)?.message ?? String(e);
-  const detail = m.replace(/\s+/g, " ").slice(0, 220);
+  const detail = m
+    .replace(/\b(?:organi[sz]ation|org|project)\s*[`'"]?[\w-]+[`'"]?/gi, "org")
+    .replace(/\b(?:gsk|nvapi|sk|AIza)[\w-]{8,}/g, "[key]")
+    .replace(/\s+/g, " ")
+    .slice(0, 220);
   return `${friendlyReason(m)} [${detail}]`;
 }
 
