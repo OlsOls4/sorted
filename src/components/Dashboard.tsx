@@ -78,6 +78,9 @@ export function Dashboard() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/app/dashboard" className="btn-ghost px-3 py-1.5 text-xs" title="AG Studio dashboard: who still owes what">
+              <span aria-hidden="true">▦</span> Money owed
+            </Link>
             <span className="hidden sm:inline">
               <EngineBadge engine={c.status?.engine} />
             </span>

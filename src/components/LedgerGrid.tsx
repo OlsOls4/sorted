@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AllCommunityModule,
-  ModuleRegistry,
   themeQuartz,
   type ColDef,
   type GridApi,
@@ -20,7 +19,9 @@ import { STAGE_LABEL, suggestStage } from "@/lib/ledger";
 import type { Invoice } from "@/lib/types";
 import { PayPalMark, StageBadge, StatusBadge } from "./ui";
 
-ModuleRegistry.registerModules([AllCommunityModule]);
+// Modules are registered on this grid only (the `modules` prop), never globally: a global
+// ModuleRegistry.registerModules call leaks into AG Studio's own grids on the same page.
+const LEDGER_MODULES = [AllCommunityModule];
 
 const sortedTheme = themeQuartz.withParams({
   accentColor: "#0a7f5a",
@@ -298,18 +299,22 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: 
       bal += d._balance;
       paid += d._display === "Paid" ? d.total : d.amountPaid;
     });
-    setPinned([
-      {
-        _pinned: true,
+    const next: Partial<Row> = {
+      _pinned: true,
         id: "__totals",
         number: "",
         customerName: "Totals",
         jobSummary: `${n} invoice${n === 1 ? "" : "s"}${cancelled ? ` · ${cancelled} cancelled not counted` : ""}`,
         total: round2(total),
         _balance: round2(bal),
-        amountPaid: round2(paid),
-      },
-    ]);
+      amountPaid: round2(paid),
+    };
+    // Only publish a new totals row when it actually changed. A new pinnedBottomRowData array makes
+    // the grid fire modelUpdated again, which calls this again: without the check that is an endless
+    // render loop that pins the main thread (and starves anything else on the page, e.g. AG Studio).
+    setPinned((prev) =>
+      prev.length === 1 && (Object.keys(next) as (keyof Row)[]).every((k) => prev[0][k] === next[k]) ? prev : [next],
+    );
   }, []);
 
   // AG Grid only re-renders a cell when its value changes, and the Totals row's Customer value is
@@ -523,6 +528,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, loading = false }: 
       </div>
       <div ref={boxRef} className="h-[460px] w-full sm:h-[520px]">
         <AgGridReact<Row>
+          modules={LEDGER_MODULES}
           theme={sortedTheme}
           rowData={rows}
           columnDefs={columnDefs}
