@@ -24,6 +24,28 @@ interface AIDraft {
   warnings?: string[];
 }
 
+const sentenceCase = (s: string) => {
+  const t = s.trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+};
+
+/** Models sometimes echo the customer into the summary ("fixed stopcock for mrs okafor"). */
+function cleanSummary(ai: string | undefined, customer: string, fallback: string): string {
+  let s = (ai ?? "").trim();
+  if (customer) {
+    const bare = customer.replace(/^(?:mrs|mr|ms|miss|dr|prof)\.?\s+/i, "");
+    for (const n of [customer, bare].filter((x) => x.length > 2)) {
+      s = s.replace(new RegExp(String.raw`\s*\b(?:for|to|at)?\s*${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:['’]s)?\b`, "ig"), "");
+    }
+  }
+  s = s.replace(/\s+(?:for|to|at|in)$/i, "").trim();
+  if (s.length < 4) return fallback;
+  // Keep the address the rules parser found (e.g. "at 12 Cotham Hill") if the model dropped it.
+  const addr = fallback.match(/\sat\s(\d.*)$/)?.[1];
+  if (addr && !s.toLowerCase().includes(addr.toLowerCase())) s = `${s} at ${addr}`;
+  return sentenceCase(s);
+}
+
 // Identical notes + settings within 10 minutes reuse the last AI parse (saves free-tier calls).
 const CACHE_TTL_MS = 10 * 60_000;
 const gc = globalThis as unknown as { __sortedParseCache?: Map<string, { at: number; draft: InvoiceDraft; engine: EngineInfo }> };
@@ -60,7 +82,10 @@ export async function parseNotes(
       .map((li) => ({
         id: uid("li_"),
         kind: (["labour", "parts", "callout", "other"].includes(String(li.kind)) ? li.kind : "other") as LineItem["kind"],
-        description: String(li.description ?? "Work").slice(0, 200),
+        description:
+          li.kind === "callout" && /^call[- ]?out(?: charge| fee)?$/i.test(String(li.description ?? "").trim())
+            ? "Call-out charge"
+            : sentenceCase(String(li.description ?? "Work")).slice(0, 200),
         quantity: round2(Number(li.quantity) || 1),
         unitAmount: round2(Number(li.unitAmount) || 0),
         unit: (["HOURS", "QUANTITY", "AMOUNT"].includes(String(li.unit)) ? li.unit : "AMOUNT") as LineItem["unit"],
@@ -78,7 +103,7 @@ export async function parseNotes(
       customerName: name,
       customerEmail: email,
       customerType: ai.customerType === "business" || ai.customerType === "consumer" ? ai.customerType : detectCustomerType(name, email),
-      jobSummary: (ai.jobSummary ?? heuristic.jobSummary).slice(0, 90),
+      jobSummary: cleanSummary(ai.jobSummary, name, heuristic.jobSummary).slice(0, 90),
       items: items.length ? items : heuristic.items,
       vatEnabled: settings.vatRegistered || !!ai.vatMentioned,
       dueDate: addDays(today, term),
