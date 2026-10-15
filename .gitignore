@@ -45,3 +45,8 @@ tsconfig.tsbuildinfo
 # unit test build output
 /.test-build/
 /.eval-build/
+
+# internal parser harness outputs (never published)
+/eval/raw-*.json
+/eval/scores-*.json
+/eval/RESULTS.md

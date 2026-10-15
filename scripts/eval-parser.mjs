@@ -1,4 +1,4 @@
-// Accuracy eval for Sorted's job-notes -> invoice parser.
+// Internal regression harness for the job-notes -> invoice parser (local use only; outputs are git-ignored).
 //
 // Runs the app's real parse path (src/lib/ai/parse.ts parseNotes, which falls back to
 // the rules engine in src/lib/parser.ts) over eval/job-notes.json and scores it.
@@ -10,7 +10,7 @@
 //   node scripts/eval-parser.mjs --rescore eval/raw-remote.json   # re-score saved outputs, no calls
 // Options: --append (continue a chunked run)  --url https://sorted-paypal.vercel.app  --pause 3000  --max-calls 55  --only n01,n02
 //
-// Raw outputs are written to eval/raw-<engine>.json and scores to eval/scores-<engine>.json.
+// Outputs go to eval/raw-<engine>.json and eval/scores-<engine>.json, which are git-ignored and never published.
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
