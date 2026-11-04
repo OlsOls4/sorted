@@ -90,7 +90,7 @@ export function areaFor(inv: Pick<Invoice, "customerName" | "customerEmail" | "j
     const [area, city] = SAMPLE_AREAS[hash((inv.customerEmail || inv.customerName).toLowerCase()) % SAMPLE_AREAS.length];
     return { area, city };
   }
-  return { area: "Unknown", city: "Unknown" };
+  return { area: "No address", city: "No address" };
 }
 
 export function toStudioRows(ledger: Invoice[], today = todayISO()): { invoices: StudioInvoiceRow[]; payments: StudioPaymentRow[] } {
@@ -147,6 +147,6 @@ export interface StudioVocab {
 }
 
 export function vocabFor(rows: StudioInvoiceRow[]): StudioVocab {
-  const uniq = (xs: string[]) => [...new Set(xs.filter((x) => x && x !== "Unknown"))].sort();
+  const uniq = (xs: string[]) => [...new Set(xs.filter((x) => x && x !== "No address"))].sort();
   return { cities: uniq(rows.map((r) => r.city)), areas: uniq(rows.map((r) => r.area)), customers: uniq(rows.map((r) => r.customer)) };
 }

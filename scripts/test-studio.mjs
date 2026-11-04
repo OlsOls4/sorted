@@ -55,7 +55,7 @@ check(new Set(rows.invoices.filter((r) => r.customerKey === "patel.r@example.com
 check(rows.invoices.find((r) => /Clifton/.test(r.customer))?.area === "Clifton", "area read from the customer name");
 check(rows.invoices.find((r) => /Chandos/.test(r.job))?.area === "Redland", "area read from the job address");
 check(vocab.cities.includes("Bristol"), "Bristol is in the vocabulary");
-check(R.areaFor({ customerName: "A N Other", customerEmail: "x@y.z", jobSummary: "Tap", source: "paypal" }).area === "Unknown", "live invoices without an address stay Unknown");
+check(R.areaFor({ customerName: "A N Other", customerEmail: "x@y.z", jobSummary: "Tap", source: "paypal" }).area === "No address", "live invoices without an address show No address");
 
 console.log("Ask Sorted rules");
 const ri = (p) => I.rulesIntent(p, vocab, today);

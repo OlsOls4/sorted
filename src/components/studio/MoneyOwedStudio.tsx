@@ -127,7 +127,7 @@ export function MoneyOwedStudio({ licenseKey }: { licenseKey?: string }) {
               <Logo className="text-xl" />
             </Link>
             <span className="hidden text-sm font-semibold text-ink-2 sm:inline">Money owed</span>
-            {c.mode === "demo" && (
+            {ready && c.mode === "demo" && (
               <span className="rounded-full bg-warn-soft px-2.5 py-1 text-[11px] font-bold tracking-wide text-warn uppercase ring-1 ring-warn/20">Demo mode</span>
             )}
           </div>

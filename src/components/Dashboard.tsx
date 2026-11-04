@@ -88,7 +88,7 @@ export function Dashboard() {
   return (
     <div className="min-h-screen pb-16">
       <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 2xl:max-w-[1440px]">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 2xl:max-w-[1440px]">
           <div className="flex items-center gap-3">
             <Link href="/" aria-label="Sorted home">
               <Logo className="text-xl" />
@@ -119,20 +119,20 @@ export function Dashboard() {
                     : "Real PayPal sandbox API with the keys you connected."
                 }
               >
-                Live · PayPal {c.status?.paypalEnv ?? "sandbox"}
+                Live<span className="hidden sm:inline"> · PayPal {c.status?.paypalEnv ?? "sandbox"}</span>
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Link href="/app/dashboard" className="btn-ghost px-3 py-1.5 text-xs" title="AG Studio dashboard: who still owes what">
-              <span aria-hidden="true">▦</span> Money owed
+          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
+            <Link href="/app/dashboard" className="btn-ghost px-2 py-1.5 text-xs sm:px-3" title="AG Studio dashboard: who still owes what" aria-label="Money owed dashboard">
+              <span aria-hidden="true">▦</span> <span className="hidden sm:inline">Money owed</span><span className="sm:hidden">Owed</span>
             </Link>
             {c.status?.liveAvailable ? (
-              <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => c.setMode(c.mode === "demo" ? "live" : "demo")}>
+              <button className="btn-ghost px-2 py-1.5 text-xs sm:px-3" onClick={() => c.setMode(c.mode === "demo" ? "live" : "demo")}>
                 {c.mode === "demo" ? "Go live" : "Use demo"}
               </button>
             ) : null}
-            <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => setShowConnect(true)} title="Use live PayPal sandbox invoicing">
+            <button className="btn-ghost px-2 py-1.5 text-xs sm:px-3" onClick={() => setShowConnect(true)} title="Use live PayPal sandbox invoicing">
               <span className="text-pp" aria-hidden="true">◉</span>
               <span className="hidden sm:inline">{c.status?.liveAvailable ? "PayPal" : "Connect PayPal sandbox"}</span>
               <span className="sm:hidden">PayPal</span>
@@ -143,8 +143,8 @@ export function Dashboard() {
               </button>
             )}
             {c.mode === "live" && (
-              <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => c.refresh()} disabled={c.syncing}>
-                {c.syncing ? <Spinner /> : "↻"} Sync
+              <button className="btn-ghost px-2 py-1.5 text-xs sm:px-3" onClick={() => c.refresh()} disabled={c.syncing} aria-label="Sync with PayPal">
+                {c.syncing ? <Spinner /> : "↻"} <span className="hidden sm:inline">Sync</span>
               </button>
             )}
             <button type="button" className="btn-ghost px-2.5 py-1.5" onClick={() => setShowSettings(true)} aria-label="Business settings" title="Business settings">
@@ -191,6 +191,9 @@ export function Dashboard() {
           engine={editing.engine}
           aiError={editing.aiError}
           mode={c.mode}
+          sharedSandbox={!!c.status?.sharedSandbox}
+          businessName={c.settings.businessName}
+          onEditBusiness={() => setShowSettings(true)}
           onClose={() => setEditing(null)}
           onSend={async (d) => {
             // Approvals are single-use: a retry after an error mints a fresh one.

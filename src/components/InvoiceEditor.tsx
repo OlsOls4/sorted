@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { computeTotals, gbp, lineTotal, uid } from "@/lib/format";
+import { addDays, computeTotals, daysBetween, gbp, lineTotal, todayISO, ukDate, uid } from "@/lib/format";
+import { DEFAULT_SETTINGS } from "@/lib/types";
 import type { EngineInfo, InvoiceDraft, LineItem, Mode } from "@/lib/types";
 import { EngineBadge, Modal, PayPalMark, Spinner } from "./ui";
 
@@ -10,6 +11,9 @@ export function InvoiceEditor({
   engine,
   aiError,
   mode,
+  sharedSandbox = false,
+  businessName,
+  onEditBusiness,
   onClose,
   onSend,
 }: {
@@ -17,6 +21,9 @@ export function InvoiceEditor({
   engine?: EngineInfo;
   aiError?: string;
   mode: Mode;
+  sharedSandbox?: boolean;
+  businessName?: string;
+  onEditBusiness?: () => void;
   onClose: () => void;
   onSend: (d: InvoiceDraft) => Promise<void>;
 }) {
@@ -69,6 +76,17 @@ export function InvoiceEditor({
         <EngineBadge engine={engine} />
       </div>
 
+      {businessName === DEFAULT_SETTINGS.businessName && onEditBusiness && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm text-ink">
+          <span>
+            This invoice is from <strong>{businessName}</strong>, the demo business.
+          </span>
+          <button type="button" className="font-semibold text-brand underline" onClick={onEditBusiness}>
+            Change to your business
+          </button>
+        </div>
+      )}
+
       {!!d.warnings?.length && (
         <div className="mb-4 rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink-2">
           {d.warnings.map((w, i) => (
@@ -91,7 +109,20 @@ export function InvoiceEditor({
             value={d.customerEmail}
             onChange={(e) => set("customerEmail", e.target.value.trim())}
             placeholder="customer@example.com"
+            aria-describedby="ce-hint"
           />
+          {sharedSandbox && emailOK && !/@(?:[\w-]+\.)*example\.(?:com|org|net)$|\.(?:example|test)$/i.test(d.customerEmail) && (
+            <p id="ce-hint" className="mt-1 text-xs text-ink-2">
+              The shared demo sends to test addresses only.{" "}
+              <button
+                type="button"
+                className="font-semibold text-brand underline"
+                onClick={() => set("customerEmail", `${d.customerEmail.split("@")[0]}@example.com`)}
+              >
+                Use {d.customerEmail.split("@")[0]}@example.com
+              </button>
+            </p>
+          )}
         </div>
         <div className="sm:col-span-2">
           <label className="label" htmlFor="js">Job</label>
@@ -158,7 +189,23 @@ export function InvoiceEditor({
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="due">Due date</label>
-          <input id="due" type="date" className="input" value={d.dueDate} onChange={(e) => set("dueDate", e.target.value)} />
+          <input id="due" type="date" lang="en-GB" className="input" value={d.dueDate} onChange={(e) => set("dueDate", e.target.value)} aria-describedby="due-uk" />
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-ink-2">
+            {dueOK && (
+              <span id="due-uk">
+                Due {ukDate(d.dueDate)}
+                {(() => {
+                  const n = daysBetween(todayISO(), d.dueDate);
+                  return n > 0 ? ` · in ${n} day${n === 1 ? "" : "s"}` : n === 0 ? " · today" : "";
+                })()}
+              </span>
+            )}
+            {[7, 14, 30].map((n) => (
+              <button key={n} type="button" className="rounded-full px-2 py-0.5 ring-1 ring-line hover:bg-paper" onClick={() => set("dueDate", addDays(todayISO(), n))}>
+                {n} days
+              </button>
+            ))}
+          </div>
         </div>
         <div>
           <span className="label">Customer type</span>
