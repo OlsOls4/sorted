@@ -43,11 +43,12 @@ export async function POST(req: Request) {
       temperature: 0,
     });
     const intent = sanitizeIntent(extractJSON(res.text), vocab);
-    const answer: Answer = intent ? { intent, engine: res.engine } : { intent: rules, engine: fallbackEngine(), aiError: "AI answer unusable, used the rules engine" };
+    const answer: Answer = intent ? { intent, engine: res.engine } : { intent: rules, engine: fallbackEngine() };
     if (cache.size > 200) cache.clear();
     cache.set(key, answer);
     return Response.json(answer);
   } catch (e) {
-    return Response.json({ intent: rules, engine: fallbackEngine(), aiError: friendlyAIError(e) } satisfies Answer);
+    console.warn("[sorted] studio intent served by Sorted engine:", friendlyAIError(e));
+    return Response.json({ intent: rules, engine: fallbackEngine() } satisfies Answer);
   }
 }

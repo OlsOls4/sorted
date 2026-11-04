@@ -5,7 +5,7 @@
 
 import "server-only";
 import { addDays, balance, daysOverdue, gbp, isOpen, todayISO, ukDate } from "../format";
-import { customerSummaries, earnedBetween, overdueInvoices, STAGE_LABEL, totals } from "../ledger";
+import { customerSummaries, earnedBetween, overdueInvoices, reminderStageFor, STAGE_LABEL, toneRequested, totals } from "../ledger";
 import { parseJobNotes } from "../parser";
 import { templateReminder } from "../reminders";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, ReminderStage, Settings, ToolTraceEntry } from "../types";
@@ -25,6 +25,8 @@ export interface AgentContext {
   ledgerVia: ToolTraceEntry["via"];
   /** Live mode: the PayPal app the Agent Toolkit tools run against. */
   cfg?: PayPalConfig | null;
+  /** The user's latest message: used to honour an explicitly requested reminder tone. */
+  userText?: string;
 }
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
@@ -87,7 +89,7 @@ export const TOOLS: ToolSpec[] = [
       "PayPal Agent Toolkit send_invoice_reminder for an unpaid invoice. Not sent until the user taps OK: Sorted drafts the email (nudge, firm or final, with the pay link) for review.",
     parameters: {
       type: "object",
-      properties: { ...INVOICE_REF, stage: { type: "string", enum: ["nudge", "firm", "final"], description: "Omit to choose by lateness" } },
+      properties: { ...INVOICE_REF },
     },
   },
   {
@@ -249,7 +251,8 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
     case "send_invoice_reminder": {
       const inv = findTarget(ledger, args, today);
       if (!inv) return { result: { error: "No matching unpaid invoice found." }, trace: { tool: name, args, summary: "no match", via: "ledger" } };
-      const stage = (["nudge", "firm", "final"].includes(String(args.stage)) ? args.stage : undefined) as ReminderStage | undefined;
+      // Tone is never chosen by the model: lateness sets it unless the user named a tone.
+      const stage: ReminderStage = reminderStageFor(inv, ctx.userText ?? "", today);
       const { draft } = useAI ? await draftReminder(inv, settings, stage) : { draft: templateReminder(inv, settings, stage, today) };
       const pending: PendingAction = {
         type: "send_reminder",
@@ -295,13 +298,15 @@ function systemPrompt(ctx: AgentContext) {
   const today = todayISO();
   return `You are the Sorted assistant, a friendly, sharp money assistant for a UK sole trader: ${ctx.settings.traderName} of ${ctx.settings.businessName}.
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
-Always use tools to get numbers — never guess figures. "Latest payer" means the customer who pays latest/slowest.
+Always use tools to get numbers — never guess figures. State only facts returned by tools: never give tax, VAT or legal reasons, opinions or exemptions (e.g. never say a service is VAT-exempt); if asked, say the user's accountant can confirm. The Late Payment Act interest figures from the tools may be quoted as calculated. "Latest payer" means the customer who pays latest/slowest.
 For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps OK in the app, so tell them to review and confirm.
 "Chase X", "chase my worst payer" or "remind X" is a request to act: find the customer (rank_payers or list_invoices if needed) and then call send_invoice_reminder in the same turn, rather than stopping to ask whether to send one.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
 }
 
 export async function runAgent(messages: ChatMessage[], ctx: AgentContext): Promise<ChatResponse> {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  ctx = { ...ctx, userText: lastUser ? String(lastUser.content ?? "") : "" };
   const llm = getLLM();
   if (llm) {
     try {
@@ -309,7 +314,7 @@ export async function runAgent(messages: ChatMessage[], ctx: AgentContext): Prom
     } catch (e) {
       const res = await runRulesAgent(messages, ctx);
       res.engine = fallbackEngine();
-      res.toolTrace.unshift({ tool: "ai_unavailable", args: {}, summary: friendlyAIError(e) });
+      console.warn("[sorted] AI agent unavailable, served by Sorted engine:", friendlyAIError(e));
       return res;
     }
   }
@@ -450,7 +455,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
     return respond(
       `I've drafted an invoice for **${d.customerName || "an unnamed customer"}** — **${gbp(total)}**, due ${ukDate(d.dueDate)}.\n${d.items
         .map((li) => bullet(`${li.description}: ${li.quantity} × ${gbp(li.unitAmount)}`))
-        .join("\n")}${d.warnings?.length ? `\n\n⚠️ ${d.warnings.join(" ")}` : ""}\n\nReview it and tap **Confirm** to open it in the editor before sending through PayPal.`,
+        .join("\n")}\n\nReview it and tap **Review invoice** to open it in the editor before sending through PayPal.`,
       out.pending,
     );
   }
@@ -462,12 +467,12 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
       const od = overdueInvoices(ctx.ledger, today)[0];
       target = od?.customerName;
     }
-    const stage = /\bfinal\b/.test(q) ? "final" : /\bfirm\b|\bstern\b/.test(q) ? "firm" : /\bfriendly|gentle|nudge\b/.test(q) ? "nudge" : undefined;
+    const stage = toneRequested(q);
     const out = await call("send_invoice_reminder", { customer: target, ...(stage ? { stage } : {}) });
-    if (!out.pending) return respond(`I couldn't find an unpaid invoice${target ? ` for ${target}` : ""} to chase. 🎉`);
+    if (!out.pending) return respond(`I couldn't find an unpaid invoice${target ? ` for ${target}` : ""} to chase.`);
     const p = out.pending as Extract<PendingAction, { type: "send_reminder" }>;
     return respond(
-      `Here's a **${STAGE_LABEL[p.stage].toLowerCase()}** for **${p.customerName}** (invoice ${p.invoiceNumber}). Nothing's been sent — check the wording and tap **Confirm** to send it via PayPal.`,
+      `Here's a **${STAGE_LABEL[p.stage].toLowerCase()}** for **${p.customerName}** (invoice ${p.invoiceNumber}). Nothing's been sent — check the wording and tap **Review & send** to send it via PayPal.`,
       p,
     );
   }
@@ -477,7 +482,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
     const out = await call("propose_mark_paid", { customer: who ?? "" });
     if (!out.pending) return respond(`I couldn't find an unpaid invoice${who ? ` for ${who}` : ""} to mark as paid.`);
     const p = out.pending as Extract<PendingAction, { type: "mark_paid" }>;
-    return respond(`Mark invoice ${p.invoiceNumber} for **${p.customerName}** (**${gbp(p.amount)}**) as paid? Tap **Confirm** and I'll record the payment.`, p);
+    return respond(`Mark invoice ${p.invoiceNumber} for **${p.customerName}** (**${gbp(p.amount)}**) as paid? Tap **Confirm paid** and I'll record the payment.`, p);
   }
 
   // 4) Earnings
@@ -502,7 +507,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
       return respond(`Your quickest payers:\n${best.map((c) => bullet(`**${c.name}** — pays in ${c.avgDaysToPay} day${c.avgDaysToPay === 1 ? "" : "s"} on average`)).join("\n")}`);
     }
     const top = ranked.slice(0, 3);
-    if (!top.length) return respond("Nobody's paying late at the moment. 👍");
+    if (!top.length) return respond("Nobody's paying late at the moment.");
     return respond(
       `Your latest payers:\n${top
         .map((c) =>
@@ -518,7 +523,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
   if (/\b(overdue|late|chasing|past due)\b/.test(q)) {
     const out = await call("list_invoices", { status: "overdue" });
     const rows = out.result as ReturnType<typeof brief>[];
-    if (!rows.length) return respond("Nothing is overdue right now. 🎉");
+    if (!rows.length) return respond("Nothing is overdue right now.");
     const sum = rows.reduce((s, r) => s + r.outstanding, 0);
     return respond(
       `**${rows.length} overdue invoice${rows.length === 1 ? "" : "s"}** totalling **${gbp(sum)}**:\n${rows
@@ -545,7 +550,7 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
     const out = await call("get_ledger_summary");
     const s = out.result as ReturnType<typeof totals> & { customers: ReturnType<typeof customerSummaries> };
     const owing = s.customers.filter((c) => c.outstanding > 0);
-    if (!owing.length) return respond("Nobody owes you anything right now. 🎉");
+    if (!owing.length) return respond("Nobody owes you anything right now.");
     return respond(
       `You're owed **${gbp(s.outstanding)}** across ${owing.length} customer${owing.length === 1 ? "" : "s"}${s.overdue > 0 ? ` — **${gbp(s.overdue)} is overdue**` : ""}:\n${owing
         .map((c) => bullet(`**${c.name}** — ${gbp(c.outstanding)}${c.overdue > 0 ? ` (${c.maxDaysOverdue} days overdue)` : " (not due yet)"}`))

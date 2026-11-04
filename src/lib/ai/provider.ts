@@ -359,8 +359,8 @@ function safeParse(s: string, fallback: unknown = {}): Record<string, unknown> {
 
 // ---------------- Provider chain with per-provider cooldowns ----------------
 
-export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Sorted rules engine (no AI key)", ai: false };
-export const RULES_ENGINE_BUSY: EngineInfo = { id: "rules", label: "Sorted rules engine (AI busy, fallback)", ai: false };
+export const RULES_ENGINE: EngineInfo = { id: "rules", label: "Sorted engine", ai: false };
+export const RULES_ENGINE_BUSY: EngineInfo = { id: "rules", label: "Sorted engine", ai: false };
 
 const one = (f: () => LLM | null) => () => {
   const l = f();

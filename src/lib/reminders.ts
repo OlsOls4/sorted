@@ -24,7 +24,7 @@ export function payLine(inv: Invoice): string {
 
 /** B2B final notice incentive: settle today and the statutory extras are dropped. */
 export function waiverLine(si: { interestToDate: number; fixedCompensation: number }): string {
-  return `If you pay the invoice in full today using the link above, I'll waive the statutory interest and the ${gbp(si.fixedCompensation)} compensation.`;
+  return `If you pay the invoice in full today using the PayPal link in this email, I'll waive the statutory interest and the ${gbp(si.fixedCompensation)} compensation.`;
 }
 
 export function templateReminder(inv: Invoice, settings: Settings, stage?: ReminderStage, today = todayISO()): ReminderDraft {

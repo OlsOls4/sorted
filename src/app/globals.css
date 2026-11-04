@@ -5,9 +5,10 @@
   --color-ink-2: #23384d;
   --color-muted: #5b6b7c;
   --color-line: #e3e8ee;
+  --color-line-strong: #7d8b99;
   --color-paper: #f6f8fa;
-  --color-brand: #0a7f5a;
-  --color-brand-2: #0f9d6f;
+  --color-brand: #08704f;
+  --color-brand-2: #065c41;
   --color-brand-soft: #e5f6ef;
   --color-pp: #003087;
   --color-pp-2: #0070e0;
@@ -62,7 +63,7 @@ body {
   @apply btn bg-bad text-white hover:opacity-90;
 }
 @utility input {
-  @apply w-full rounded-xl border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none;
+  @apply w-full rounded-xl border border-line-strong bg-white px-3 py-2 text-base sm:text-sm text-ink placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none;
 }
 @utility label {
   @apply mb-1 block text-xs font-semibold tracking-wide text-muted uppercase;

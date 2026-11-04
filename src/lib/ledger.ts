@@ -106,6 +106,33 @@ export function suggestStage(inv: Invoice, today = todayISO()): ReminderStage {
   return "nudge";
 }
 
+const STAGE_RANK: Record<ReminderStage, number> = { nudge: 0, firm: 1, final: 2 };
+
+/**
+ * The tone the user explicitly asked for in their own words ("send a gentle nudge",
+ * "a firm reminder", "final notice"), or undefined when they didn't name one.
+ */
+export function toneRequested(text: string): ReminderStage | undefined {
+  const q = text.toLowerCase();
+  if (/\bfinal(?:\s+notice|\s+reminder|\s+warning)?\b/.test(q)) return "final";
+  if (/\b(?:firm|firmer|stern|sterner|strong|stronger)\b/.test(q)) return "firm";
+  if (/\b(?:friendly|gentle|gentler|gently|soft|softer|polite|light|nudge)\b/.test(q)) return "nudge";
+  return undefined;
+}
+
+/**
+ * Tone floor for reminders drafted by the assistant: never softer than suggestStage()
+ * unless the user's own message explicitly asked for that tone. A model-chosen stage is
+ * never trusted on its own.
+ */
+export function reminderStageFor(inv: Invoice, userText: string, today = todayISO()): ReminderStage {
+  const floor = suggestStage(inv, today);
+  const asked = toneRequested(userText);
+  return asked ?? floor;
+}
+
+export const stageRank = (s: ReminderStage) => STAGE_RANK[s];
+
 export const STAGE_LABEL: Record<ReminderStage, string> = {
   nudge: "Friendly nudge",
   firm: "Firm reminder",

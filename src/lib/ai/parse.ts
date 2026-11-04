@@ -1,6 +1,6 @@
 import "server-only";
 import { addDays, round2, todayISO, uid } from "../format";
-import { detectCustomerType, mentionsVat, noteAmounts, parseJobNotes } from "../parser";
+import { applyAllInTotal, detectCustomerType, mentionsVat, noteAmounts, parseJobNotes } from "../parser";
 import type { EngineInfo, InvoiceDraft, LineItem, Settings } from "../types";
 import { RULES_ENGINE, extractJSON, fallbackEngine, friendlyAIError, getLLM } from "./provider";
 
@@ -96,8 +96,8 @@ export async function parseNotes(
     const email = aiEmail && notes.toLowerCase().includes(aiEmail) ? aiEmail : heuristic.customerEmail;
     const name = (ai.customerName ?? "").trim() || heuristic.customerName;
     const term = typeof ai.dueInDays === "number" && ai.dueInDays >= 0 && ai.dueInDays < 366 ? ai.dueInDays : settings.paymentTermsDays;
-    const warnings = [...(ai.warnings ?? []).map(String)];
-    if (!email) warnings.push("No email address found — PayPal needs one to send the invoice.");
+    const warnings: string[] = [];
+    if (!email) warnings.push("Add the customer's email — PayPal sends the invoice there.");
     // Flag any £ amount in the notes that the AI draft doesn't account for (a line's unit price,
     // line total, or the labour rate), e.g. a short "screws 12" the model dropped.
     const finalItems = items.length ? items : heuristic.items;
@@ -108,10 +108,13 @@ export async function parseNotes(
     }
     covered.add(round2(settings.hourlyRate));
     const missing = noteAmounts(heuristic).filter((a) => !covered.has(a));
-    if (missing.length) {
-      warnings.unshift(`Check the lines: ${missing.map((a) => `£${a.toFixed(2)}`).join(", ")} in your notes ${missing.length === 1 ? "isn't" : "aren't"} on this draft.`);
+    if (missing.length && items.length) {
+      // Quietly add any priced line from the notes the model left out.
+      for (const li of heuristic.items) {
+        if (missing.includes(round2(li.unitAmount)) || missing.includes(round2(li.unitAmount * li.quantity))) items.push({ ...li, id: uid("li_") });
+      }
     }
-    const draft: InvoiceDraft = {
+    const draft: InvoiceDraft = applyAllInTotal({
       ...heuristic,
       customerName: name,
       customerEmail: email,
@@ -123,7 +126,7 @@ export async function parseNotes(
       dueDate: addDays(today, term),
       note: `Thanks for choosing ${settings.businessName}. Payment due within ${term} days.`,
       warnings: [...new Set(warnings)].slice(0, 5),
-    };
+    }, notes);
     if (parseCache.size > 200) for (const [k, v] of parseCache) if (Date.now() - v.at > CACHE_TTL_MS || parseCache.size > 150) parseCache.delete(k);
     parseCache.set(key, { at: Date.now(), draft: structuredClone(draft), engine: res.engine });
     return { draft, engine: res.engine };

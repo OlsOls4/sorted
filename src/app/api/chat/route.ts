@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       ledger = full.map((p) => payPalToInvoice(p, isSandbox(cfg)));
       ledgerVia = "paypal-agent-toolkit";
     } catch (e) {
-      preTrace.push({ tool: "agent_toolkit_fallback", args: {}, summary: (e as Error).message.slice(0, 160) });
+      console.warn("[sorted] agent toolkit list failed, using REST:", (e as Error).message.slice(0, 160));
       try {
         ledger = (await getBackend(rc).list()).data;
         ledgerVia = "paypal-rest";

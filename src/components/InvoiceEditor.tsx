@@ -67,17 +67,12 @@ export function InvoiceEditor({
       <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted">
         <span>Drafted by</span>
         <EngineBadge engine={engine} />
-        {aiError && (
-          <span className="text-warn" title={aiError}>
-            ({aiError.split(" [")[0]})
-          </span>
-        )}
       </div>
 
       {!!d.warnings?.length && (
-        <div className="mb-4 rounded-xl border border-warn/30 bg-warn-soft px-3 py-2 text-sm text-warn">
+        <div className="mb-4 rounded-xl border border-line bg-paper px-3 py-2 text-sm text-ink-2">
           {d.warnings.map((w, i) => (
-            <div key={i}>⚠️ {w}</div>
+            <div key={i}>{w}</div>
           ))}
         </div>
       )}

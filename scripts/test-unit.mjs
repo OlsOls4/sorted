@@ -155,8 +155,17 @@ const CASES = [
   ["shower fit for Mr Khan, 4h at £55, parts: mixer £140 and tray £90, inc vat", (d) => {
     check(has(d, "labour", 4, 55), "4h at £55");
     check(d.items.some((i) => i.unitAmount === 140) && d.items.some((i) => i.unitAmount === 90), "both parts");
-    check(d.vatEnabled && d.warnings.some((w) => /includes VAT/.test(w)), "inc vat warns");
+    check(d.vatEnabled && !d.warnings.some((w) => /VAT/.test(w)), "inc vat: no warning");
   }],
+  ["fixed tap for Mrs Patel, new washer, £60 all in inc vat, patel@example.com", (d) => {
+    const net = d.items.reduce((t, i) => t + i.unitAmount * i.quantity, 0);
+    const gross = Math.round((net + (d.vatEnabled ? Math.round(net * 20) / 100 : 0)) * 100) / 100;
+    check(gross === 60, `all in total is £60 (got £${gross})`);
+  }, { ...S, vatRegistered: true }],
+  ["boiler service for Tom, £85 all in, tom@example.com", (d) => {
+    const net = d.items.reduce((t, i) => t + i.unitAmount * i.quantity, 0);
+    check(!d.vatEnabled && net === 85, `not VAT registered: £85 (got £${net})`);
+  }, { ...S, vatRegistered: false }],
   // Bare number straight after an item name is money ("chemicals 35", "EICR cert 60").
   ["power flushed system for the Coopers, 6 hours, chemicals 35, magnaclean filter 120, mark.cooper@btinternet.com", (d) => {
     check(has(d, "labour", 6, 45), "6h labour");
@@ -239,7 +248,7 @@ const step = async (name, fn) => {
 await step("no keys → getLLM() null, rules engine says 'no AI key'", async () => {
   setEnv({});
   check(P.getLLM() === null, "null router");
-  check(P.fallbackEngine().label === "Sorted rules engine (no AI key)", "label");
+  check(P.fallbackEngine().label === "Sorted engine", "label");
 });
 
 await step("Groq adapter: request shape, tool calls parsed, engine names provider+model", async () => {
@@ -325,7 +334,7 @@ await step("Short Retry-After honoured; timeout falls through", async () => {
   check(until && until - Date.now() <= 40_000 && until - Date.now() > 30_000, "groq cooling ≈ Retry-After 40s");
   check(err?.name === "AIUnavailableError" && /timed out/.test(err.message), `all failed → AIUnavailableError (${err?.message})`);
   check(P.providerCoolingUntil("OpenRouter nvidia/nemotron-3-super-120b-a12b:free") > Date.now(), "timeout cools openrouter");
-  check(P.fallbackEngine().label === "Sorted rules engine (AI busy, fallback)", "busy label when keys exist");
+  check(P.fallbackEngine().label === "Sorted engine", "neutral label when keys exist");
   check(/busy|timed out/.test(P.friendlyAIError(err)), `friendly: ${P.friendlyAIError(err)}`);
   calls.length = 0;
   let err2;

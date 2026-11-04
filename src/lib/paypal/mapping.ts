@@ -6,8 +6,11 @@ import type { Invoice, InvoiceDraft, InvoiceStatus, LineItem, Settings } from ".
 import type { PayPalInvoice } from "./client";
 
 function splitName(full: string): { given_name: string; surname: string } {
-  const cleaned = full.replace(/^(Mrs|Mr|Ms|Miss|Dr|Prof)\.?\s+/i, "").trim();
-  const parts = cleaned.split(/\s+/);
+  // "Mrs Patel" keeps its title (given "Mrs", surname "Patel") so reminders say "Hi Mrs Patel";
+  // a full name drops it ("Ms Ngozi Okafor" -> Ngozi / Okafor).
+  const all = full.trim().split(/\s+/);
+  const titled = /^(Mrs|Mr|Ms|Miss|Dr|Prof)\.?$/i.test(all[0] ?? "");
+  const parts = titled && all.length > 2 ? all.slice(1) : all;
   if (parts.length === 1) return { given_name: parts[0] || full, surname: "" };
   return { given_name: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
 }

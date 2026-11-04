@@ -110,7 +110,7 @@ export function Scoreboard(p: Params) {
       {rows.length === 0 ? (
         <div className="grid flex-1 place-items-center text-center text-sm text-muted">
           <div>
-            <div className="text-3xl" aria-hidden="true">🎉</div>
+            <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-brand-soft text-lg font-bold text-brand" aria-hidden="true">✓</div>
             Everyone&apos;s paid up. Clean sheet!
           </div>
         </div>

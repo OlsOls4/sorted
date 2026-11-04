@@ -233,7 +233,6 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
   const vatInc = /\binc(?:l|luding)?\.?\s*vat\b/i.test(text);
   if (VAT_ON.test(text)) vatEnabled = true;
   if (VAT_OFF.test(text)) vatEnabled = false;
-  if (vatInc && vatEnabled) warnings.push("Notes say the price includes VAT; amounts here are treated as ex-VAT, so check the totals.");
   text = text.replace(VAT_OFF, " § ").replace(VAT_ON, " § ").replace(/\bvat\b/gi, " ");
 
   // --- Payment terms, then blank out
@@ -507,7 +506,7 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
         items.push({ id: uid("li_"), kind: "parts", description: sentence(rest).slice(0, 120), quantity: qty, unitAmount: a.amount, unit: qty > 1 ? "QUANTITY" : "AMOUNT" });
       } else {
         items.push({ id: uid("li_"), kind: "other", description: "Additional charge", quantity: qty, unitAmount: a.amount, unit: qty > 1 ? "QUANTITY" : "AMOUNT" });
-        warnings.push(`Wasn't sure what £${a.amount.toFixed(2)} was for — check the description.`);
+        warnings.push(`Give the £${a.amount.toFixed(2)} line a description if you like.`);
       }
     }
   }
@@ -517,7 +516,7 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
   const labourDesc = jobSummary === "Work carried out" || /^labour/i.test(jobSummary) ? "Labour" : `Labour — ${jobSummary}`;
   if (dayRate > 0) {
     const d = days || 1;
-    if (!days) warnings.push("Day rate found but not how many days — set to 1.");
+    if (!days) warnings.push("Day rate set to 1 day — change the quantity if it ran longer.");
     labour.push({ id: uid("li_"), kind: "labour", description: `${labourDesc} (${d} day${d === 1 ? "" : "s"})`, quantity: d, unitAmount: dayRate, unit: "QUANTITY" });
   } else if (days > 0 && hours === 0) {
     hours = days * 8;
@@ -539,23 +538,21 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
     if (settings.calloutFee > 0) {
       items.push({ id: uid("li_"), kind: "callout", description: "Call-out charge", quantity: 1, unitAmount: settings.calloutFee, unit: "AMOUNT" });
     } else {
-      warnings.push("Call-out mentioned but no amount — add it if you charge one.");
+      warnings.push("Call-out: add an amount if you charge one.");
     }
   }
 
   const dueDate = dueToday ? today : addDays(today, termDays);
   if (dueToday) termDays = 0;
 
-  if (!customerName) warnings.push("Couldn't spot the customer's name.");
-  if (!email) warnings.push("No email address found — PayPal needs one to send the invoice.");
-  if (items.length === 0) warnings.push("No hours or amounts found — add line items before sending.");
+  if (!customerName) warnings.push("Add the customer's name.");
+  if (!email) warnings.push("Add the customer's email — PayPal sends the invoice there.");
+  if (items.length === 0) warnings.push("Add the line items before sending.");
 
   const confidence =
     (customerName ? 0.3 : 0) + (email ? 0.3 : 0) + (items.length ? 0.3 : 0) + (warnings.length === 0 ? 0.1 : 0);
 
-  return {
-    confidence,
-    draft: {
+  const draftOut: InvoiceDraft = {
       customerName,
       customerEmail: email,
       customerType: detectCustomerType(customerName, email),
@@ -568,6 +565,50 @@ export function parseJobNotes(notes: string, settings: Settings, today = todayIS
       dueDate,
       note: `Thanks for choosing ${settings.businessName}. ${termDays === 0 ? "Payment due on receipt." : `Payment due within ${termDays} days.`}`,
       warnings,
-    },
   };
+  return { confidence, draft: applyAllInTotal(draftOut, notes) };
+}
+
+const ALL_IN_AMOUNT =
+  /£\s?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:quid\s*)?(?:(?:all[- ]in|in total|total)\b[\s,]*(?:inc(?:l|luding)?\.?\s*vat\b)?|inc(?:l|luding)?\.?\s*vat\b)/i;
+const INC_VAT = /\binc(?:l|luding)?\.?\s*vat\b/i;
+
+/**
+ * "£60 all in (inc VAT)" is a fixed gross price: the invoice total must be exactly that.
+ * Keeps parts, drops the all-in line and labour lines, and makes labour up the difference.
+ * Pure; runs after both the rules parse and the AI parse.
+ */
+export function applyAllInTotal(d: InvoiceDraft, notes: string): InvoiceDraft {
+  const m = notes.match(ALL_IN_AMOUNT);
+  const incVat = INC_VAT.test(notes);
+  const rate = (d.vatRate ?? 20) / 100;
+  const grossOf = (net: number) => round2(net + (d.vatEnabled ? round2(net * rate) : 0));
+  const netFor = (gross: number) => {
+    if (!d.vatEnabled) return round2(gross);
+    let n = round2(gross / (1 + rate));
+    for (const step of [0, 0.01, -0.01, 0.02, -0.02]) if (grossOf(round2(n + step)) === round2(gross)) return round2(n + step);
+    return n;
+  };
+  if (m) {
+    const gross = Number(m[1].replace(/,/g, ""));
+    if (!(gross > 0)) return d;
+    // Only VAT-inclusive when the notes say so or the trader charges VAT on everything.
+    const target = incVat || d.vatEnabled ? netFor(gross) : round2(gross);
+    const isAllInLine = (li: LineItem) => round2(li.unitAmount * li.quantity) === round2(gross);
+    const parts = d.items.filter((li) => li.kind !== "labour" && !isAllInLine(li));
+    const partsSum = round2(parts.reduce((t, li) => t + li.unitAmount * li.quantity, 0));
+    let items: LineItem[];
+    if (partsSum > 0 && partsSum < target) {
+      const labour = d.items.find((li) => li.kind === "labour");
+      items = [
+        { id: uid("li_"), kind: "labour", description: labour?.description || "Labour", quantity: 1, unitAmount: round2(target - partsSum), unit: "AMOUNT" },
+        ...parts,
+      ];
+    } else {
+      const desc = d.items.find(isAllInLine)?.description || d.items[0]?.description || d.jobSummary || "Work as agreed";
+      items = [{ id: uid("li_"), kind: "other", description: desc, quantity: 1, unitAmount: target, unit: "AMOUNT" }];
+    }
+    return { ...d, items };
+  }
+  return d;
 }

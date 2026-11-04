@@ -181,7 +181,7 @@ export function MoneyOwedStudio({ licenseKey }: { licenseKey?: string }) {
             ))}
           </div>
           {answer && (
-            <div className={`mt-3 rounded-xl px-3 py-2 text-sm ${answer.error ? "bg-bad-soft text-bad" : "bg-paper text-ink-2"}`} aria-live="polite">
+            <div className={`mt-3 rounded-xl px-3 py-2 text-sm bg-paper text-ink-2`} aria-live="polite">
               <span className="font-semibold text-ink">“{answer.q}”</span> — <span>
                 {parseInline(answer.text).map((t, i) => (t.kind === "bold" ? <strong key={i}>{t.text}</strong> : t.kind === "code" ? <code key={i}>{t.text}</code> : <span key={i}>{t.text}</span>))}
               </span>

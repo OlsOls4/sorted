@@ -5,7 +5,7 @@ import { api } from "@/lib/client";
 import { gbp } from "@/lib/format";
 import type { PaymentEvent } from "@/lib/events";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, Settings, ToolTraceEntry } from "@/lib/types";
-import { EngineBadge, RichText, Spinner } from "./ui";
+import { EngineBadge, RichText, Spinner, StageBadge } from "./ui";
 
 const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer", "QR code for my worst payer"];
 
@@ -55,7 +55,7 @@ export function AskSorted({
           ...m,
           ...fresh.map((e) => ({
             role: "assistant" as const,
-            content: `${e.kind === "paid" ? "💷 **Payment in.**" : "**Invoice cancelled.**"} ${e.message} (via ${src(e)})`,
+            content: `${e.kind === "paid" ? "**Payment in.**" : "**Invoice cancelled.**"} ${e.message} (via ${src(e)})`,
           })),
         ]),
       0,
@@ -139,8 +139,12 @@ export function AskSorted({
                           className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-muted ring-1 ring-line"
                           title={`${t.summary}${t.via ? ` · via ${VIA_LABEL[t.via]}` : ""}\nargs: ${JSON.stringify(t.args)}`}
                         >
-                          ⚡ {t.tool}
-                          {t.via && t.via !== "ledger" ? ` · ${VIA_LABEL[t.via]}` : ""}
+                          {t.tool}
+                          {m.meta?.pendingAction && /send_invoice_reminder|create_invoice|propose_mark_paid/.test(t.tool)
+                            ? " · drafted, awaiting your OK"
+                            : t.via && t.via !== "ledger"
+                              ? ` · ${VIA_LABEL[t.via]}`
+                              : ""}
                         </span>
                       ))}
                     </div>
@@ -197,7 +201,10 @@ function ActionCard({ a, state, onConfirm, onDismiss }: { a: PendingAction; stat
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-white p-3">
       <div className="mb-1 text-xs font-bold tracking-wide text-brand uppercase">Needs your OK</div>
-      <div className="text-sm font-semibold">{title}</div>
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+        {title}
+        {a.type === "send_reminder" && <StageBadge stage={a.stage} />}
+      </div>
       {a.type === "send_reminder" && (
         <details className="mt-1 text-xs text-muted">
           <summary className="cursor-pointer">Preview: {a.subject}</summary>
