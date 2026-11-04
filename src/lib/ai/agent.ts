@@ -299,9 +299,19 @@ function systemPrompt(ctx: AgentContext) {
   return `You are the Sorted assistant, a friendly, sharp money assistant for a UK sole trader: ${ctx.settings.traderName} of ${ctx.settings.businessName}.
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
 Always use tools to get numbers — never guess figures. State only facts returned by tools: never give tax, VAT or legal reasons, opinions or exemptions (e.g. never say a service is VAT-exempt); if asked, say the user's accountant can confirm. The Late Payment Act interest figures from the tools may be quoted as calculated. "Latest payer" means the customer who pays latest/slowest.
-For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps OK in the app, so tell them to review and confirm.
+For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps the card's button in the app ("Review & send" for reminders, "Review invoice" for new invoices, "Confirm paid" for payments), so tell them to tap that button.
 "Chase X", "chase my worst payer" or "remind X" is a request to act: find the customer (rank_payers or list_invoices if needed) and then call send_invoice_reminder in the same turn, rather than stopping to ask whether to send one.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
+}
+
+const BUTTON: Record<PendingAction["type"], string> = { send_reminder: "Review & send", create_invoice: "Review invoice", mark_paid: "Confirm paid" };
+
+/** The model sometimes says "tap Confirm"; name the button the card actually shows. */
+function withButtonNames(res: ChatResponse): ChatResponse {
+  if (!res.pendingAction) return res;
+  const label = BUTTON[res.pendingAction.type];
+  res.reply = res.reply.replace(/\b(tap|click|press|hit)\s+(\*\*)?(confirm|ok|send|approve)(\*\*)?/gi, (_m, verb) => `${verb} **${label}**`);
+  return res;
 }
 
 export async function runAgent(messages: ChatMessage[], ctx: AgentContext): Promise<ChatResponse> {
@@ -310,7 +320,7 @@ export async function runAgent(messages: ChatMessage[], ctx: AgentContext): Prom
   const llm = getLLM();
   if (llm) {
     try {
-      return await runLLMAgent(messages, ctx, llm);
+      return withButtonNames(await runLLMAgent(messages, ctx, llm));
     } catch (e) {
       const res = await runRulesAgent(messages, ctx);
       res.engine = fallbackEngine();

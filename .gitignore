@@ -50,3 +50,4 @@ tsconfig.tsbuildinfo
 /eval/raw-*.json
 /eval/scores-*.json
 /eval/RESULTS.md
+tsconfig.tsbuildinfo
