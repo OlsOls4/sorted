@@ -9,7 +9,7 @@ import { EngineBadge, RichText, Spinner, StageBadge } from "./ui";
 
 const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer", "QR code for my worst payer"];
 
-type UIMsg = ChatMessage & { meta?: Pick<ChatResponse, "engine" | "toolTrace" | "pendingAction" | "qr">; actionState?: "done" | "dismissed" };
+type UIMsg = ChatMessage & { meta?: Pick<ChatResponse, "engine" | "toolTrace" | "pendingAction" | "qr" | "link">; actionState?: "done" | "dismissed" };
 
 const VIA_LABEL: Record<NonNullable<ToolTraceEntry["via"]>, string> = {
   "paypal-agent-toolkit": "PayPal Agent Toolkit",
@@ -81,7 +81,7 @@ export function AskSorted({
         ledger: invoices,
         settings,
       });
-      setMsgs((m) => [...m, { role: "assistant", content: res.reply, meta: { engine: res.engine, toolTrace: res.toolTrace, pendingAction: res.pendingAction, qr: res.qr } }]);
+      setMsgs((m) => [...m, { role: "assistant", content: res.reply, meta: { engine: res.engine, toolTrace: res.toolTrace, pendingAction: res.pendingAction, qr: res.qr, link: res.link } }]);
     } catch (e) {
       setMsgs((m) => [...m, { role: "assistant", content: `Sorry — ${(e as Error).message}` }]);
     } finally {
@@ -129,6 +129,11 @@ export function AskSorted({
                         ) : null}
                       </figcaption>
                     </figure>
+                  )}
+                  {m.meta?.link && (
+                    <a className="btn-ghost mt-2 inline-flex" href={m.meta.link.href} target="_blank" rel="noreferrer">
+                      {m.meta.link.label} →
+                    </a>
                   )}
                   {m.meta && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-line/70 pt-2">

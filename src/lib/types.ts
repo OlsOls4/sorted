@@ -1,5 +1,7 @@
 // Core domain types for Sorted. Shared by client and server.
 
+import { LATE_PAYMENT_REFERENCE_RATE } from "./rates";
+
 export type InvoiceStatus =
   | "DRAFT"
   | "SENT"
@@ -110,7 +112,7 @@ export const DEFAULT_SETTINGS: Settings = {
   vatRate: 20,
   paymentTermsDays: 14,
   calloutFee: 0,
-  bankRate: 3.75,
+  bankRate: LATE_PAYMENT_REFERENCE_RATE,
 };
 
 export type EngineInfo = {
@@ -164,6 +166,8 @@ export interface ChatResponse {
   pendingAction?: PendingAction;
   /** A PayPal invoice QR code the agent generated (generate_invoice_qr_code). */
   qr?: { invoiceId: string; invoiceNumber: string; dataUrl: string; payerViewUrl?: string; via: ToolTraceEntry["via"] };
+  /** A page in Sorted the reply points to (e.g. a prepared Letter Before Claim). Opening it sends nothing. */
+  link?: { href: string; label: string };
 }
 
 export type Mode = "demo" | "live";

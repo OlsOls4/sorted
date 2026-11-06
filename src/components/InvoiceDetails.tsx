@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/client";
 import { balance, daysOverdue, displayStatus, gbp, isOpen, payLaterEligible, ukDate } from "@/lib/format";
-import type { Invoice, Mode } from "@/lib/types";
+import { claimStatus, letterPath } from "@/lib/claim";
+import { statutoryInterest } from "@/lib/ledger";
+import { DEFAULT_SETTINGS, type Invoice, type Mode, type Settings } from "@/lib/types";
 import { Modal, PayPalMark, Spinner, StatusBadge } from "./ui";
 
 /**
@@ -13,6 +15,7 @@ import { Modal, PayPalMark, Spinner, StatusBadge } from "./ui";
 export function InvoiceDetails({
   invoice,
   mode,
+  settings = DEFAULT_SETTINGS,
   onClose,
   onRemind,
   onMarkPaid,
@@ -20,6 +23,7 @@ export function InvoiceDetails({
 }: {
   invoice: Invoice;
   mode: Mode;
+  settings?: Settings;
   onClose: () => void;
   onRemind?: (inv: Invoice) => void;
   onMarkPaid?: (inv: Invoice) => void;
@@ -34,6 +38,9 @@ export function InvoiceDetails({
   const status = displayStatus(invoice);
   const od = daysOverdue(invoice);
   const link = invoice.payerViewUrl;
+  const si = statutoryInterest(invoice, settings.bankRate);
+  const showSI = open && si.applies;
+  const claim = claimStatus(invoice, undefined, { demo: mode === "demo" });
 
   useEffect(() => {
     if (!open) return;
@@ -78,6 +85,22 @@ export function InvoiceDetails({
               </tr>
             </tbody>
           </table>
+          {showSI && (
+            <div className="rounded-xl bg-warn-soft px-3 py-2 text-xs text-warn">
+              <p className="font-semibold">
+                Statutory interest so far {gbp(si.interestToDate)} · rising {gbp(si.dailyInterest)} a day
+              </p>
+              <p className="mt-0.5">
+                Plus {gbp(si.fixedCompensation)} fixed compensation. Late Payment of Commercial Debts (Interest) Act 1998: {si.ratePercent}% a year from the due date on{" "}
+                {gbp(si.principal)}. Total you could claim today: <strong>{gbp(si.totalClaim)}</strong>.
+              </p>
+              {claim.ready && (
+                <a className="mt-2 inline-block font-semibold text-ink underline" href={letterPath(invoice.id)} target="_blank" rel="noreferrer">
+                  Prepare Letter Before Claim →
+                </a>
+              )}
+            </div>
+          )}
           {open && payLaterEligible(invoice) && (
             <p className="rounded-xl bg-sky-50 px-3 py-2 text-xs text-pp">
               Private customer, {gbp(balance(invoice))}: reminders mention that eligible customers can choose <strong>PayPal Pay in 3</strong> at checkout (subject to

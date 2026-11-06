@@ -8,6 +8,7 @@ import { addDays, balance, daysOverdue, gbp, isOpen, todayISO, ukDate } from "..
 import { customerSummaries, earnedBetween, overdueInvoices, reminderStageFor, STAGE_LABEL, toneRequested, totals } from "../ledger";
 import { parseJobNotes } from "../parser";
 import { templateReminder } from "../reminders";
+import { buildLetterBeforeClaim, claimStatus, letterPath } from "../claim";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, ReminderStage, Settings, ToolTraceEntry } from "../types";
 import { issueApproval } from "../approval";
 import { isSandbox, type PayPalConfig, type PayPalInvoice } from "../paypal/client";
@@ -98,6 +99,12 @@ export const TOOLS: ToolSpec[] = [
     parameters: { type: "object", properties: { notes: { type: "string" } }, required: ["notes"] },
   },
   {
+    name: "prepare_claim_pack",
+    description:
+      "Prepare a printable Letter Before Claim (claim pack) for an overdue business invoice: amount, statutory interest, compensation, 14 days to pay, PayPal pay link. Read-only: returns a link; nothing is sent.",
+    parameters: { type: "object", properties: INVOICE_REF },
+  },
+  {
     name: "propose_mark_paid",
     description: "Propose recording a cash/bank payment against an invoice. Nothing changes until the user taps OK.",
     parameters: { type: "object", properties: INVOICE_REF },
@@ -150,6 +157,7 @@ interface ToolOutcome {
   trace: ToolTraceEntry;
   pending?: PendingAction;
   qr?: ChatResponse["qr"];
+  link?: ChatResponse["link"];
 }
 
 const live = (ctx: AgentContext) => ctx.mode === "live" && !!ctx.cfg;
@@ -278,6 +286,31 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
         pending: withApproval({ type: "create_invoice", draft }, ctx),
       };
     }
+    case "prepare_claim_pack": {
+      const inv = findTarget(ledger, args, today);
+      if (!inv) return { result: { error: "No matching unpaid invoice found." }, trace: { tool: name, args, summary: "no match", via: "ledger" } };
+      const st = claimStatus(inv, today, { demo: ctx.mode === "demo" });
+      if (!st.ready) return { result: { ready: false, invoice: inv.number, customer: inv.customerName, reason: st.reason }, trace: { tool: name, args, summary: `not ready: ${inv.number}`, via: "ledger" } };
+      const l = buildLetterBeforeClaim(inv, settings, today);
+      const href = letterPath(inv.id);
+      return {
+        result: {
+          ready: true,
+          sent: false,
+          link: href,
+          invoice: inv.number,
+          customer: inv.customerName,
+          principal: l.breakdown[0].amount,
+          statutoryInterest: l.breakdown[1].amount,
+          fixedCompensation: l.breakdown[2].amount,
+          total: l.total,
+          dailyInterest: l.dailyInterest,
+          payBy: l.payBy,
+        },
+        trace: { tool: name, args, summary: `Letter Before Claim for ${inv.number} (${gbp(l.total)})`, via: "ledger" },
+        link: { href, label: `Open Letter Before Claim (${inv.number})` },
+      };
+    }
     case "propose_mark_paid": {
       const inv = findTarget(ledger, args, today);
       if (!inv) return { result: { error: "No matching unpaid invoice found." }, trace: { tool: name, args, summary: "no match", via: "ledger" } };
@@ -300,6 +333,7 @@ function systemPrompt(ctx: AgentContext) {
 Today is ${today} (Europe/London). Currency is GBP (£). Use British English. Be concise: short sentences, bullet points for lists, bold key amounts with **.
 Always use tools to get numbers — never guess figures. State only facts returned by tools: never give tax, VAT or legal reasons, opinions or exemptions (e.g. never say a service is VAT-exempt); if asked, say the user's accountant can confirm. The Late Payment Act interest figures from the tools may be quoted as calculated. "Latest payer" means the customer who pays latest/slowest.
 For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid) call the tool: it will NOT happen until the user taps the card's button in the app ("Review & send" for reminders, "Review invoice" for new invoices, "Confirm paid" for payments), so tell them to tap that button.
+"Prepare a letter before claim" or "claim pack" for a customer: call prepare_claim_pack. It is read-only and sends nothing; the letter opens from the button under your reply. It is a template, not legal advice.
 "Chase X", "chase my worst payer" or "remind X" is a request to act: find the customer (rank_payers or list_invoices if needed) and then call send_invoice_reminder in the same turn, rather than stopping to ask whether to send one.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
 }
@@ -339,12 +373,13 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
   const trace: ToolTraceEntry[] = [];
   let pending: PendingAction | undefined;
   let qr: ChatResponse["qr"];
+  let link: ChatResponse["link"];
   let engine = llm.info ?? RULES_ENGINE;
   for (let step = 0; step < 3; step++) {
     const res = await llm.chat({ system: systemPrompt(ctx), messages: convo, tools: TOOLS, maxTokens: 900 });
     engine = res.engine;
     if (!res.toolCalls.length) {
-      return { reply: res.text.trim() || "Done.", engine, toolTrace: trace, pendingAction: pending, qr };
+      return { reply: res.text.trim() || "Done.", engine, toolTrace: trace, pendingAction: pending, qr, link };
     }
     convo.push({ role: "assistant", content: res.text, toolCalls: res.toolCalls });
     for (const call of res.toolCalls) {
@@ -357,6 +392,7 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
       trace.push(out.trace);
       if (out.pending) pending = out.pending;
       if (out.qr) qr = out.qr;
+      if (out.link) link = out.link;
       convo.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(out.result).slice(0, 6000) });
     }
     if (pending) {
@@ -376,7 +412,7 @@ async function runLLMAgent(messages: ChatMessage[], ctx: AgentContext, llm: LLMR
       return { reply: `${lead ? `${lead}\n\n` : ""}Here's the PayPal QR code for **${qr.invoiceNumber}**. Your customer scans it to open the invoice and pay.`, engine, toolTrace: trace, qr };
     }
   }
-  return { reply: "I've gathered what I can — see the details above.", engine, toolTrace: trace, pendingAction: pending, qr };
+  return { reply: "I've gathered what I can — see the details above.", engine, toolTrace: trace, pendingAction: pending, qr, link };
 }
 
 // ---------------- Deterministic rules agent ----------------
@@ -443,6 +479,25 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
   };
   const respond = (reply: string, pendingAction?: PendingAction): ChatResponse => ({ reply, engine: RULES_ENGINE, toolTrace: trace, pendingAction });
   const who = customerMentioned(q, ctx.ledger);
+
+  // 0a) Letter Before Claim / claim pack (read-only)
+  if (/\bletter before (claim|action)\b|\bclaim pack\b|\bsmall claims?\b|\bmoney claim\b/.test(q)) {
+    const target = who ?? overdueInvoices(ctx.ledger, today).find((i) => i.customerType === "business")?.customerName;
+    const out = await call("prepare_claim_pack", { customer: target ?? "" });
+    const r = out.result as { ready?: boolean; reason?: string; error?: string; invoice?: string; customer?: string; principal?: number; statutoryInterest?: number; fixedCompensation?: number; total?: number; dailyInterest?: number; payBy?: string };
+    if (!r.ready) return respond(r.reason ?? `I couldn't find an unpaid invoice${target ? ` for ${target}` : ""} to prepare a letter for.`);
+    return {
+      ...respond(
+        `Your Letter Before Claim for **${r.customer}** (${r.invoice}) is ready: **${gbp(r.total!)}** in total.\n${[
+          bullet(`Invoice balance: ${gbp(r.principal!)}`),
+          bullet(`Statutory interest to date: ${gbp(r.statutoryInterest!)} (rising ${gbp(r.dailyInterest!)} a day)`),
+          bullet(`Fixed compensation: ${gbp(r.fixedCompensation!)}`),
+          bullet(`Asks for payment within 14 days, by ${ukDate(r.payBy!)}, via the PayPal link`),
+        ].join("\n")}\n\nNothing has been sent. Open it, check the details, then print or save it as a PDF. Template only, not legal advice.`,
+      ),
+      link: out.link,
+    };
+  }
 
   // 0) QR code for an invoice
   if (/\bqr\b|\bscan\b/.test(q)) {

@@ -1,6 +1,7 @@
 // Pure ledger analytics used by the dashboard, the rules engine and the AI tools.
 
 import { balance, daysBetween, daysOverdue, daysToPay, isOpen, isPaid, round2, todayISO } from "./format";
+import { LATE_PAYMENT_STATUTORY_MARGIN } from "./rates";
 import type { Invoice, ReminderStage } from "./types";
 
 export interface CustomerSummary {
@@ -141,23 +142,30 @@ export const STAGE_LABEL: Record<ReminderStage, string> = {
 
 /**
  * Late Payment of Commercial Debts (Interest) Act 1998: B2B only.
- * Statutory interest = 8% + Bank of England reference rate, simple, daily.
+ * Statutory interest = 8% + Bank of England reference rate (see rates.ts), simple, from the
+ * day after the due date. Daily rate = principal × (base + 8%) / 365.
  * Fixed compensation: £40 (< £1,000), £70 (£1,000–£9,999.99), £100 (£10,000+).
  */
 export function statutoryInterest(inv: Invoice, bankRate: number, today = todayISO()) {
   const od = Math.max(0, daysOverdue(inv, today));
   const debt = balance(inv);
-  const ratePercent = round2(8 + bankRate);
-  const interestToDate = round2(((debt * ratePercent) / 100 / 365) * od);
+  const ratePercent = round2(LATE_PAYMENT_STATUTORY_MARGIN + bankRate);
+  const daily = (debt * ratePercent) / 100 / 365;
+  const dailyInterest = round2(daily);
+  const interestToDate = round2(daily * od);
   const fixedCompensation = debt >= 10000 ? 100 : debt >= 1000 ? 70 : 40;
-  const applies = inv.customerType === "business" && od > 0;
+  const applies = inv.customerType === "business" && od > 0 && debt > 0;
   return {
     applies,
     ratePercent,
+    principal: round2(debt),
+    daysOverdue: od,
+    dailyInterest,
     interestToDate,
     fixedCompensation,
+    totalClaim: round2(debt + interestToDate + fixedCompensation),
     explanation: applies
-      ? `Under the Late Payment of Commercial Debts (Interest) Act 1998 you can claim interest at ${ratePercent}% a year (8% + ${bankRate}% Bank of England base rate) — about £${interestToDate.toFixed(2)} so far — plus £${fixedCompensation} fixed compensation.`
+      ? `Under the Late Payment of Commercial Debts (Interest) Act 1998 you can claim interest at ${ratePercent}% a year (8% + ${bankRate}% Bank of England reference rate), about £${interestToDate.toFixed(2)} so far, plus £${fixedCompensation} fixed compensation.`
       : "The Late Payment Act only covers business-to-business debts, so it isn't mentioned for a private customer.",
   };
 }

@@ -37,7 +37,8 @@ export function useSorted() {
   const invoicesRef = useRef<Invoice[]>([]);
   useEffect(() => {
     invoicesRef.current = invoices;
-  }, [invoices]);
+    if (mode === "live" && invoices.length) storage.saveLiveSnapshot(invoices);
+  }, [invoices, mode]);
   const seenEvents = useRef(new Set<string>());
 
   const toast = useCallback((kind: Toast["kind"], text: string) => {

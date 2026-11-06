@@ -10,6 +10,7 @@ const K = {
   settings: "sorted.settings.v1",
   mode: "sorted.mode.v1",
   liveReminders: "sorted.live.reminders.v1",
+  liveSnapshot: "sorted.live.snapshot.v1",
   paypalCreds: "sorted.paypal.sandbox.v1",
 };
 
@@ -54,6 +55,9 @@ export const storage = {
   },
   loadPreferredMode: (): Mode | null => read<Mode | null>(K.mode, null),
   savePreferredMode: (m: Mode) => write(K.mode, m),
+  /** Last live ledger seen in this browser, so a Letter Before Claim tab can be built from it. */
+  loadLiveSnapshot: (): Invoice[] => read<Invoice[]>(K.liveSnapshot, []),
+  saveLiveSnapshot: (l: Invoice[]) => write(K.liveSnapshot, l),
   loadLiveReminders: () => read<Record<string, Invoice["reminders"]>>(K.liveReminders, {}),
   saveLiveReminders: (r: Record<string, Invoice["reminders"]>) => write(K.liveReminders, r),
   loadPayPalCreds: (): PayPalCreds | null => {

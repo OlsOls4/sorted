@@ -28,6 +28,7 @@ execFileSync(
     path.join(root, "src/lib/events.ts"),
     path.join(root, "src/lib/qr.ts"),
     path.join(root, "src/lib/reminders.ts"),
+    path.join(root, "src/lib/claim.ts"),
   ],
   { stdio: "inherit" },
 );
@@ -639,6 +640,53 @@ await step("parse.ts: notes that mention VAT override the AI's/settings' VAT dec
   const c = await PARSE.parseNotes("replaced tap for mr price, 2 hrs, plus vat", { ...REG, vatRegistered: false });
   check(c.draft.vatEnabled === true, "'plus vat' in notes wins even when the AI says vatMentioned=false");
   setEnv({});
+});
+
+await step("claim.ts: statutory interest, daily rate and Letter Before Claim amounts", async () => {
+  const CLAIM = require(path.join(out, "lib/claim.js"));
+  const LED = require(path.join(out, "lib/ledger.js"));
+  const RATES = require(path.join(out, "lib/rates.js"));
+  check(RATES.LATE_PAYMENT_REFERENCE_RATE === 3.75 && S.bankRate === RATES.LATE_PAYMENT_REFERENCE_RATE, "one reference rate (3.75%, 30 Jun 2026)");
+  const base = {
+    id: "INV2-CLAIM-1", number: "INV-2001", status: "SENT", customerName: "Redland Property Management", customerEmail: "m@redland.example",
+    customerType: "business", jobSummary: "Emergency leak repair", items: [], vatEnabled: false, vatRate: 20, currency: "GBP",
+    subtotal: 1000, vat: 0, total: 1000, amountPaid: 0, issueDate: "2026-08-14", dueDate: "2026-09-13",
+    payerViewUrl: "https://www.sandbox.paypal.com/invoice/p/#INV2-CLAIM-1", reminders: [{ sentAt: "2026-10-01T09:00:00Z", stage: "final", subject: "x" }], source: "paypal",
+  };
+  const t = "2026-10-13"; // 30 days after due
+  const si = LED.statutoryInterest(base, 3.75, t);
+  check(si.ratePercent === 11.75, `rate 11.75% (${si.ratePercent})`);
+  check(si.daysOverdue === 30, `30 days (${si.daysOverdue})`);
+  check(si.dailyInterest === 0.32, `daily = 1000 x 11.75% / 365 = £0.32 (${si.dailyInterest})`);
+  check(si.interestToDate === 9.66, `interest 30 days = £9.66 (${si.interestToDate})`);
+  check(si.fixedCompensation === 70 && si.totalClaim === 1079.66, `£70 comp, total £1,079.66 (${si.totalClaim})`);
+  check(LED.statutoryInterest({ ...base, total: 999.99 }, 3.75, t).fixedCompensation === 40, "£40 under £1,000");
+  check(LED.statutoryInterest({ ...base, total: 10000 }, 3.75, t).fixedCompensation === 100, "£100 from £10,000");
+  check(LED.statutoryInterest({ ...base, total: 491.4 }, 3.75, "2026-10-24").interestToDate === 6.49, "£491.40 x 41 days = £6.49");
+  check(LED.statutoryInterest({ ...base, total: 1200, amountPaid: 200, status: "PARTIALLY_PAID" }, 3.75, t).principal === 1000, "interest on the unpaid balance");
+
+  const st = CLAIM.claimStatus(base, t);
+  check(st.ready, `ready: B2B, 30 days, final sent (${st.reason})`);
+  check(!CLAIM.claimStatus({ ...base, reminders: [] }, t).ready, "live: needs a final notice");
+  check(CLAIM.claimStatus({ ...base, reminders: [] }, t, { demo: true }).ready, "demo: any B2B 30+ days");
+  check(!CLAIM.claimStatus(base, "2026-10-12").ready, "29 days: not yet");
+  const c = CLAIM.claimStatus({ ...base, customerType: "consumer" }, t, { demo: true });
+  check(!c.ready && /Reply Form and Information Sheet/.test(c.reason) && /30 days/.test(c.reason), "consumer: protocol explained, not prepared");
+  check(!CLAIM.claimStatus({ ...base, status: "PAID", amountPaid: 1000 }, t).ready, "paid: nothing to claim");
+
+  const l = CLAIM.buildLetterBeforeClaim(base, S, t);
+  check(l.breakdown.map((b) => b.amount).join("|") === "1000|9.66|70" && l.total === 1079.66, `breakdown (${l.breakdown.map((b) => b.amount)})`);
+  check(Math.abs(l.breakdown.reduce((s, b) => s + b.amount, 0) - l.total) < 0.001, "breakdown adds up to total");
+  check(l.payBy === "2026-10-27" && l.replyDays === 14, `14 days to pay (${l.payBy})`);
+  check(l.from.business === S.businessName && l.to.name === base.customerName, "parties from settings and invoice");
+  const txt = CLAIM.letterText(l);
+  check(txt.includes(base.payerViewUrl), "PayPal pay link in letter");
+  check(/Late Payment of Commercial Debts \(Interest\) Act 1998/.test(txt) && /£0\.32 a day/.test(txt), "Act + daily accrual stated");
+  check(/30 days/.test(txt) && /Reply Form and Information Sheet/.test(txt), "individuals: 30 days + Reply Form mentioned");
+  check(txt.includes("Template only, not legal advice. Check gov.uk/make-money-claim before issuing a claim."), "footer");
+  check(!/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/u.test(txt), "no emoji");
+  check(CLAIM.letterPath("INV2-AB/C") === "/app/letter/INV2-AB%2FC", "letter route encodes id");
+  check(JSON.stringify(CLAIM.buildLetterBeforeClaim(base, S, t)) === JSON.stringify(l), "deterministic");
 });
 
 console.log(`\n${passes} checks passed, ${failures} failed`);

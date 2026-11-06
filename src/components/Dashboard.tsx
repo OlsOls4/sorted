@@ -209,6 +209,7 @@ export function Dashboard() {
         <InvoiceDetails
           invoice={viewing}
           mode={c.mode}
+          settings={c.settings}
           onClose={() => setViewingId(null)}
           onRemind={(inv) => {
             setViewingId(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { balance, daysOverdue, gbp } from "@/lib/format";
+import { claimStatus, finalNoticeSent, letterPath } from "@/lib/claim";
 import { overdueInvoices, suggestStage } from "@/lib/ledger";
 import type { Invoice } from "@/lib/types";
 import { StageBadge } from "./ui";
@@ -39,6 +40,11 @@ export function OverduePanel({ invoices, onChase }: { invoices: Invoice[]; onCha
                     <span>·</span>
                     <span>{inv.reminders.length ? `${inv.reminders.length} sent` : "not chased"}</span>
                   </div>
+                  {finalNoticeSent(inv) && claimStatus(inv).ready && (
+                    <a className="block truncate text-[11px] font-semibold text-bad hover:underline" href={letterPath(inv.id)} target="_blank" rel="noreferrer">
+                      Next step: Letter Before Claim ready
+                    </a>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <StageBadge stage={stage} />
