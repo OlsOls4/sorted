@@ -48,6 +48,13 @@ export function toPaymentEvent(event: { event_type?: string; create_time?: strin
   const raw = res.invoice ?? res;
   if (!raw?.id || !raw.detail) return null;
   const inv = payPalToInvoice(raw as PayPalInvoice, cfg ? isSandbox(cfg) : true);
+  // A payment that leaves a balance (an instalment on a payment plan) arrives as
+  // INVOICING.INVOICE.PAID with the invoice in PARTIALLY_PAID.
+  if (type === "INVOICING.INVOICE.PAID" && inv.status === "PARTIALLY_PAID") {
+    const remaining = Math.max(0, Math.round((inv.total - inv.amountPaid) * 100) / 100);
+    const base = { kind: "part_paid", invoiceId: inv.id, invoiceNumber: inv.number, customerName: inv.customerName, amount: inv.total, amountPaid: inv.amountPaid, remaining } as const;
+    return { ...base, dueDate: inv.dueDate, source: "paypal-webhook", at: event.create_time ?? new Date().toISOString(), message: eventMessage(base) };
+  }
   const kind = type === "INVOICING.INVOICE.PAID" ? "paid" : "cancelled";
   const paidDate = kind === "paid" ? (inv.paidDate ?? event.create_time?.slice(0, 10)) : undefined;
   const daysLate = kind === "paid" ? lateness(inv.dueDate, paidDate) : undefined;

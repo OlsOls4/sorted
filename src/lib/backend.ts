@@ -3,9 +3,10 @@
 // in localStorage and sends the relevant invoice(s) with each mutating request.
 
 import "server-only";
-import { computeTotals, demoPayLink, isOpen, isoTimestamp, round2, todayISO } from "./format";
+import { balance, computeTotals, demoPayLink, isOpen, isoTimestamp, round2, todayISO } from "./format";
 import { PayPalClient, PayPalError, hasIssue, isSandbox, paypalConfigFromEnv, paypalConfigFromHeaders, type PayPalConfig } from "./paypal/client";
-import { draftToPayPal, payPalToInvoice } from "./paypal/mapping";
+import { draftToPayPal, payPalToInvoice, planUpdatePayload } from "./paypal/mapping";
+import { buildPlan, type PlanCadence } from "./plan";
 import { runToolkitTool } from "./paypal/toolkit";
 import { seedInvoices } from "./seed";
 import type { Invoice, InvoiceDraft, Mode, ReminderStage, Settings } from "./types";
@@ -22,6 +23,26 @@ export interface InvoiceBackend {
   remind(invoice: Invoice | string, subject: string, note: string, stage?: ReminderStage): Promise<BackendResult<Invoice | null>>;
   markPaid(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
   cancel(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
+  /** Fresh read of one invoice (live: PayPal; demo: the invoice the browser sent). */
+  get(invoice: Invoice | string): Promise<BackendResult<Invoice | null>>;
+  /** Splits the outstanding balance into instalments and lets PayPal take part payments of that size. */
+  offerPlan(invoice: Invoice | string, opts: PlanRequest): Promise<BackendResult<Invoice | null>>;
+}
+
+export interface PlanRequest {
+  count: number;
+  cadence: PlanCadence;
+  startDate: string;
+}
+
+/** Shared checks before a plan is offered; returns the plan for the invoice's current balance. */
+export function planFor(inv: Invoice, req: PlanRequest) {
+  if (!isOpen(inv) || balance(inv) <= 0) throw new PayPalError(`${inv.number} has nothing left to pay, so there's no plan to offer.`, 422);
+  try {
+    return buildPlan(balance(inv), inv.amountPaid, req.count, req.cadence, req.startDate);
+  } catch (e) {
+    throw new PayPalError((e as Error).message, 422);
+  }
 }
 
 export function validateDraft(d: InvoiceDraft): string[] {
@@ -112,6 +133,17 @@ class MockBackend implements InvoiceBackend {
     if (typeof invoice === "string") return { data: null, via: "mock-paypal" as const };
     if (!isOpen(invoice)) throw new PayPalError(`${invoice.number} is ${invoice.status === "CANCELLED" ? "already cancelled" : "paid"}, so it can't be cancelled.`, 422);
     return { data: { ...invoice, status: "CANCELLED" as const }, via: "mock-paypal" as const };
+  }
+
+  async get(invoice: Invoice | string) {
+    return { data: typeof invoice === "string" ? null : invoice, via: "mock-paypal" as const };
+  }
+
+  async offerPlan(invoice: Invoice | string, req: PlanRequest) {
+    if (typeof invoice === "string") return { data: null, via: "mock-paypal" as const };
+    const plan = planFor(invoice, req);
+    await new Promise((r) => setTimeout(r, 200));
+    return { data: { ...invoice, plan }, via: "mock-paypal" as const };
   }
 }
 
@@ -205,6 +237,25 @@ class PayPalBackend implements InvoiceBackend {
     const fresh = payPalToInvoice(await this.client.getInvoice(id), isSandbox(this.cfg));
     if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
     return { data: fresh, via };
+  }
+
+  async get(invoice: Invoice | string) {
+    const id = typeof invoice === "string" ? invoice : invoice.id;
+    const fresh = payPalToInvoice(await this.client.getInvoice(id), isSandbox(this.cfg));
+    if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
+    return { data: fresh, via: "paypal-rest" as const };
+  }
+
+  /** PUT /v2/invoicing/invoices/{id} with configuration.partial_payment (allow_partial_payment + minimum_amount_due). */
+  async offerPlan(invoice: Invoice | string, req: PlanRequest) {
+    const id = typeof invoice === "string" ? invoice : invoice.id;
+    const raw = await this.client.getInvoice(id);
+    const plan = planFor(payPalToInvoice(raw, isSandbox(this.cfg)), req);
+    await this.client.updateInvoice(id, planUpdatePayload(raw, plan));
+    const fresh = payPalToInvoice(await this.client.getInvoice(id), isSandbox(this.cfg));
+    fresh.plan = fresh.plan ?? plan;
+    if (typeof invoice !== "string") fresh.reminders = invoice.reminders;
+    return { data: fresh, via: "paypal-rest" as const };
   }
 }
 

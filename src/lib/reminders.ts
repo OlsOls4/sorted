@@ -2,7 +2,7 @@
 
 import { addDays, balance, daysOverdue, gbp, payLaterEligible, todayISO, ukDate } from "./format";
 import { statutoryInterest, suggestStage } from "./ledger";
-import type { Invoice, ReminderDraft, ReminderStage, Settings } from "./types";
+import type { Invoice, PaymentPlan, ReminderDraft, ReminderStage, Settings } from "./types";
 
 function greetingName(inv: Invoice): string {
   if (inv.customerType === "business") return "Accounts team";
@@ -60,4 +60,39 @@ export function templateReminder(inv: Invoice, settings: Settings, stage?: Remin
     body,
     statutoryInterest: si,
   };
+}
+
+/** "1. £120.00 by 6 Dec 2026" lines for a plan. */
+export function scheduleLines(plan: PaymentPlan): string {
+  return plan.instalments.map((i) => `${i.n}. ${gbp(i.amount)} by ${ukDate(i.dueDate)}`).join("\n");
+}
+
+/**
+ * Friendly "payment plan offer" email (deterministic). Sent through the normal
+ * reviewed reminder path; the PayPal link already accepts part payments of the
+ * instalment size.
+ */
+export function templatePlanOffer(inv: Invoice, settings: Settings, plan: PaymentPlan): ReminderDraft {
+  const owed = gbp(plan.planTotal);
+  const each = plan.instalments.every((i) => i.amount === plan.instalments[0].amount)
+    ? `${plan.count} ${plan.cadence} payments of ${gbp(plan.instalments[0].amount)}`
+    : `${plan.count} ${plan.cadence} payments (${plan.instalments.map((i) => gbp(i.amount)).join(", ")})`;
+  const link = inv.payerViewUrl
+    ? `Each payment can be made by card or PayPal from the same invoice link: ${inv.payerViewUrl}\nWhen you open it, just enter the instalment amount (or more, if you'd like to clear it sooner).`
+    : "Each payment can be made from the PayPal link in the original invoice email. Just enter the instalment amount (or more, if you'd like to clear it sooner).";
+  const subject = `A payment plan for invoice ${inv.number} (${owed})`;
+  const body = `Hi ${greetingName(inv)},
+
+I know it isn't always easy to pay a bill in one go, so I'd be happy to spread the ${owed} still owing on invoice ${inv.number} for ${inv.jobSummary.toLowerCase() || "the work"} into ${each}:
+
+${scheduleLines(plan)}
+
+${link}
+
+If those dates don't suit, just reply and we can find ones that do. And if you've already paid, thank you, and please ignore this.
+
+Kind regards,
+${settings.traderName}
+${settings.businessName}`;
+  return { invoiceId: inv.id, stage: "nudge", subject, body };
 }

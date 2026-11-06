@@ -1,7 +1,7 @@
 // Signed, short-lived approval tokens for write actions (server-only).
 //
 // The agent can propose writes but never perform them. A write route (send
-// invoice, send reminder, mark paid, cancel) only runs when the request carries a
+// invoice, send reminder, mark paid, cancel, offer a payment plan) only runs when the request carries a
 // token that the server itself signed for that exact action + invoice + mode,
 // within the last 10 minutes, and that hasn't been used before. Tokens are minted
 // only where a human confirmation is shown: the "Needs your OK" card from Ask
@@ -11,8 +11,8 @@ import "server-only";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Mode } from "./types";
 
-export type ApprovalAction = "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice";
-export const APPROVAL_ACTIONS: ApprovalAction[] = ["create_invoice", "send_reminder", "mark_paid", "cancel_invoice"];
+export type ApprovalAction = "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice" | "offer_plan";
+export const APPROVAL_ACTIONS: ApprovalAction[] = ["create_invoice", "send_reminder", "mark_paid", "cancel_invoice", "offer_plan"];
 export const APPROVAL_TTL_MS = 10 * 60_000;
 
 interface Claims {

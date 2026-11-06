@@ -1,5 +1,8 @@
 // Core domain types for Sorted. Shared by client and server.
 
+import type { PaymentPlan, PlanCadence } from "./plan";
+export type { PaymentPlan, PlanCadence } from "./plan";
+
 export type InvoiceStatus =
   | "DRAFT"
   | "SENT"
@@ -71,6 +74,8 @@ export interface Invoice {
   merchantViewUrl?: string; // PayPal business dashboard link
   reminders: ReminderLog[];
   source: "paypal" | "mock";
+  /** An instalment plan offered on this invoice (PayPal partial payments). */
+  plan?: PaymentPlan;
 }
 
 export type ReminderStage = "nudge" | "firm" | "final";
@@ -139,6 +144,18 @@ export type PendingAction = (
   | {
       type: "create_invoice";
       draft: InvoiceDraft;
+    }
+  | {
+      type: "offer_plan";
+      invoiceId: string;
+      invoiceNumber: string;
+      customerName: string;
+      count: number;
+      cadence: PlanCadence;
+      startDate: string;
+      instalments: { n: number; dueDate: string; amount: number }[];
+      subject: string;
+      body: string;
     }
   | {
       type: "mark_paid";

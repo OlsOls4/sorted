@@ -104,6 +104,7 @@ const STATUS_STYLE: Record<DisplayStatus, string> = {
   "Due soon": "bg-warn-soft text-warn ring-warn/20",
   Overdue: "bg-bad-soft text-bad ring-bad/20",
   "Part paid": "bg-violet-50 text-violet-700 ring-violet-600/20",
+  "On plan": "bg-violet-50 text-violet-700 ring-violet-600/20",
   Draft: "bg-slate-100 text-slate-600 ring-slate-500/20",
   Cancelled: "bg-slate-100 text-slate-500 ring-slate-500/20 line-through",
   Refunded: "bg-slate-100 text-slate-600 ring-slate-500/20",

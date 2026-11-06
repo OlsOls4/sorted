@@ -1,3 +1,4 @@
+import { planProgress } from "./plan";
 import type { Invoice, InvoiceDraft, LineItem } from "./types";
 
 export const gbp = (n: number, opts: { pence?: boolean } = {}) =>
@@ -80,13 +81,15 @@ export function daysOverdue(inv: Invoice, today = todayISO()): number {
   return daysBetween(inv.dueDate, today);
 }
 
-export type DisplayStatus = "Draft" | "Sent" | "Due soon" | "Overdue" | "Paid" | "Part paid" | "Cancelled" | "Refunded";
+export type DisplayStatus = "Draft" | "Sent" | "Due soon" | "Overdue" | "Paid" | "Part paid" | "On plan" | "Cancelled" | "Refunded";
 
 export function displayStatus(inv: Invoice, today = todayISO()): DisplayStatus {
   if (isPaid(inv)) return "Paid";
   if (inv.status === "DRAFT") return "Draft";
   if (inv.status === "CANCELLED") return "Cancelled";
   if (inv.status.includes("REFUNDED")) return "Refunded";
+  // On a payment plan and up to date with its instalments: not chased as overdue.
+  if (inv.plan && isOpen(inv) && planProgress(inv.plan, inv.amountPaid, today).onTrack) return "On plan";
   const od = daysOverdue(inv, today);
   if (od > 0) return "Overdue";
   if (inv.status === "PARTIALLY_PAID") return "Part paid";

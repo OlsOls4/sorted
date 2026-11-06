@@ -145,8 +145,13 @@ function CustomerCell(p: ICellRendererParams<Row>) {
 function StatusCell(p: ICellRendererParams<Row>) {
   if (!p.data || p.data._pinned) return null;
   return (
-    <div className="flex h-full items-center">
+    <div className="flex h-full flex-col items-start justify-center gap-0.5 leading-tight">
       <StatusBadge status={p.data._display} />
+      {p.data.amountPaid > 0 && p.data._balance > 0 && (
+        <span className="text-[10px] text-muted tabular-nums" title="Paid so far · remaining">
+          {gbp(p.data.amountPaid)} paid · {gbp(p.data._balance)} left
+        </span>
+      )}
     </div>
   );
 }
@@ -378,7 +383,7 @@ export function LedgerGrid({ invoices, onRemind, onMarkPaid, onOpen, loading = f
         flex: 1.1,
         filter: "agTextColumnFilter",
         comparator: (a: string, b: string) => {
-          const order = ["Overdue", "Due soon", "Part paid", "Sent", "Draft", "Paid", "Refunded", "Cancelled"];
+          const order = ["Overdue", "Due soon", "On plan", "Part paid", "Sent", "Draft", "Paid", "Refunded", "Cancelled"];
           return order.indexOf(a) - order.indexOf(b);
         },
       },
