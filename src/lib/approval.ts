@@ -9,6 +9,7 @@
 
 import "server-only";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { MANDATE_DAYS, sanitizeRules, type AutopilotRules } from "./autopilot";
 import type { Mode } from "./types";
 
 export type ApprovalAction = "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice" | "offer_plan";
@@ -73,4 +74,44 @@ export function requireApproval(token: unknown, action: ApprovalAction, invoiceI
     { error: `This needs your OK first (${v.reason}). Review it and press confirm again.`, code: "APPROVAL_REQUIRED" },
     { status: 403 },
   );
+}
+
+// ---------------- Autopilot mandate ----------------
+//
+// A standing, signed permission for Autopilot: the owner's limits (tone cap,
+// days overdue, cooldown, quiet hours, exclusions), bound to the mode and valid
+// for 30 days. /api/autopilot/run plans only from the limits inside the token,
+// never from rules the browser sends alongside it.
+
+interface MandateClaims {
+  k: "mandate";
+  r: AutopilotRules;
+  m: Mode;
+  e: number;
+  n: string;
+}
+
+export function issueMandate(rules: AutopilotRules, mode: Mode, now = Date.now()): { token: string; expiresAt: string; rules: AutopilotRules } {
+  const r = sanitizeRules(rules);
+  const claims: MandateClaims = { k: "mandate", r, m: mode, e: now + MANDATE_DAYS * 86_400_000, n: randomUUID() };
+  const payload = b64url(JSON.stringify(claims));
+  return { token: `${payload}.${sign(payload)}`, expiresAt: new Date(claims.e).toISOString(), rules: r };
+}
+
+export function verifyMandate(token: unknown, mode: Mode, now = Date.now()): { ok: true; rules: AutopilotRules; expiresAt: string } | { ok: false; reason: string } {
+  if (typeof token !== "string" || !token.includes(".") || token.length > 4000) return { ok: false, reason: "no signed mandate" };
+  const [payload, sig] = token.split(".");
+  const want = Buffer.from(sign(payload));
+  const got = Buffer.from(sig ?? "");
+  if (want.length !== got.length || !timingSafeEqual(want, got)) return { ok: false, reason: "mandate signature does not match" };
+  let c: MandateClaims;
+  try {
+    c = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  } catch {
+    return { ok: false, reason: "unreadable mandate" };
+  }
+  if (c.k !== "mandate") return { ok: false, reason: "not a mandate" };
+  if (c.e < now) return { ok: false, reason: "mandate expired" };
+  if (c.m !== mode) return { ok: false, reason: `mandate was signed for ${c.m} mode` };
+  return { ok: true, rules: sanitizeRules(c.r), expiresAt: new Date(c.e).toISOString() };
 }

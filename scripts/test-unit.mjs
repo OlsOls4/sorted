@@ -30,6 +30,7 @@ execFileSync(
     path.join(root, "src/lib/reminders.ts"),
     path.join(root, "src/lib/claim.ts"),
     path.join(root, "src/lib/plan.ts"),
+    path.join(root, "src/lib/autopilot.ts"),
   ],
   { stdio: "inherit" },
 );
@@ -768,6 +769,63 @@ await step("claim.ts: statutory interest, daily rate and Letter Before Claim amo
   check(!/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/u.test(txt), "no emoji");
   check(CLAIM.letterPath("INV2-AB/C") === "/app/letter/INV2-AB%2FC", "letter route encodes id");
   check(JSON.stringify(CLAIM.buildLetterBeforeClaim(base, S, t)) === JSON.stringify(l), "deterministic");
+});
+
+await step("Autopilot: tone cap, final never automatic, cooldown, quiet hours, exclusions, paid/cancelled skipped", async () => {
+  const AP = require(path.join(out, "lib/autopilot.js"));
+  const WED_10 = new Date("2026-11-04T10:00:00Z"); // Wednesday 10:00 UK (GMT)
+  const mk = (id, name, dueDate, extra = {}) => ({ id, number: id, status: "SENT", customerName: name, customerEmail: `${id.toLowerCase()}@example.com`, customerType: "business",
+    jobSummary: "Job", items: [], vatEnabled: false, vatRate: 20, currency: "GBP", subtotal: 100, vat: 0, total: 100, amountPaid: 0, issueDate: "2026-09-01", dueDate, reminders: [], source: "mock", ...extra });
+  const ledger = [
+    mk("A", "Alpha Builders", "2026-10-25"), // 10 days late, nudge
+    mk("B", "Bravo Lettings", "2026-10-15"), // 20 days late, firm
+    mk("C", "Charlie Cafe", "2026-09-20"), // 45 days late, final
+    mk("D", "Delta Surgery", "2026-10-25", { reminders: [{ sentAt: "2026-11-01T09:00:00Z", stage: "nudge", subject: "s" }] }), // reminded 3 days ago
+    mk("E", "Echo Ltd", "2026-11-01"), // 3 days late
+    mk("F", "Foxtrot Paid", "2026-10-01", { status: "PAID", amountPaid: 100, paidDate: "2026-10-20" }),
+    mk("G", "Golf Cancelled", "2026-10-01", { status: "CANCELLED" }),
+    mk("H", "Harbourside Lettings", "2026-10-25"),
+  ];
+  const rules = { ...AP.DEFAULT_RULES, enabled: true, excludeCustomers: ["harbourside"] };
+  const by = (plan) => Object.fromEntries(plan.filter((p) => p.invoiceId).map((p) => [p.invoiceId, p]));
+  const p1 = by(AP.planAutopilot(ledger, rules, WED_10));
+  check(p1.A?.action === "send" && p1.A.stage === "nudge" && /Sent friendly nudge to Alpha Builders, 10 days late, within your mandate/.test(p1.A.reason), `nudge sent (${p1.A?.reason})`);
+  check(p1.B?.action === "hold" && p1.B.stage === "firm" && /needs your OK/.test(p1.B.reason), "firm held under a nudge-only cap");
+  check(p1.C?.action === "hold" && p1.C.stage === "final" && /final notice .* needs your OK/.test(p1.C.reason), "final notice held");
+  check(p1.D?.action === "skip" && /3 days ago/.test(p1.D.reason), `cooldown (${p1.D?.reason})`);
+  check(p1.E?.action === "skip" && /starts at 7 days/.test(p1.E.reason), "below the days-overdue threshold");
+  check(!p1.F && !p1.G, "paid and cancelled invoices never planned");
+  check(p1.H?.action === "skip" && /leaves alone/.test(p1.H.reason), "excluded customer skipped");
+  const p2 = by(AP.planAutopilot(ledger, { ...rules, maxTone: "firm" }, WED_10));
+  check(p2.B?.action === "send" && p2.B.stage === "firm", "firm sent when the cap allows firm");
+  check(p2.C?.action === "hold", "final still held with a firm cap");
+  const p3 = by(AP.planAutopilot(ledger, { ...rules, maxTone: "final" }, WED_10));
+  check(p3.B?.action === "hold" && p3.C?.action === "hold", "a 'final' cap is clamped to nudge");
+  check(by(AP.planAutopilot(ledger, { ...rules, cooldownDays: 2 }, WED_10)).D?.action === "hold", "cooldown passed: D (1 reminder sent → firm) held under nudge cap");
+  const quiet = (d) => AP.planAutopilot(ledger, rules, new Date(d));
+  check(quiet("2026-11-07T10:00:00Z").length === 1 && /Quiet hours/.test(quiet("2026-11-07T10:00:00Z")[0].reason), "Saturday: quiet");
+  check(/Quiet hours/.test(quiet("2026-11-04T07:30:00Z")[0].reason) && /Quiet hours/.test(quiet("2026-11-04T18:00:00Z")[0].reason), "before 8am and from 6pm: quiet");
+  check(/Quiet hours/.test(quiet("2026-07-01T17:30:00Z")[0].reason), "BST: 18:30 UK is quiet");
+  check(AP.planAutopilot(ledger, { ...rules, quietHours: false }, new Date("2026-11-07T10:00:00Z")).some((p) => p.action === "send"), "quiet hours can be switched off");
+  check(AP.planAutopilot(ledger, { ...rules, enabled: false }, WED_10)[0].reason === "Autopilot is off.", "off: nothing planned");
+  const many = Array.from({ length: 8 }, (_, i) => mk(`M${i}`, `Mike ${i}`, "2026-10-25"));
+  check(AP.planAutopilot(many, rules, WED_10).filter((p) => p.action === "send").length === AP.MAX_SENDS_PER_RUN, "per-run send cap");
+  const e = { at: "x", action: "hold", invoiceId: "C", reason: "Held: r" };
+  check(AP.mergeLog(AP.mergeLog([], [e]), [{ ...e, at: "y" }]).length === 1, "activity log doesn't repeat an unchanged hold");
+  check(AP.mergeLog([{ ...e, action: "send", reason: "Sent" }], [{ ...e, action: "send", reason: "Sent" }]).length === 2, "every send is logged");
+  check(AP.sanitizeRules({ minDaysOverdue: -5, cooldownDays: 9999, excludeCustomers: ["  x ", 3] }).minDaysOverdue === 1, "rules sanitised");
+
+  process.env.SORTED_APPROVAL_SECRET = "unit-test-secret";
+  const m = APR.issueMandate({ ...rules, maxTone: "final" }, "demo");
+  const v = APR.verifyMandate(m.token, "demo");
+  check(v.ok && v.rules.maxTone === "nudge" && v.rules.excludeCustomers[0] === "harbourside", "mandate signs the sanitised limits");
+  check(!APR.verifyMandate(m.token, "live").ok, "mandate bound to its mode");
+  const [pl, sig] = m.token.split(".");
+  const forged = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(pl, "base64url").toString()), r: { ...rules, maxTone: "firm" } })).toString("base64url");
+  check(!APR.verifyMandate(`${forged}.${sig}`, "demo").ok, "edited limits rejected");
+  check(!APR.verifyMandate(APR.issueMandate(rules, "demo", Date.now() - 31 * 86_400_000).token, "demo").ok, "expires after 30 days");
+  check(APR.verifyMandate(m.token, "demo").ok, "mandate is a standing permission (reusable until expiry)");
+  check(!APR.verifyApproval(m.token, "send_reminder", "A", "demo").ok, "a mandate is not a one-off approval");
 });
 
 console.log(`\n${passes} checks passed, ${failures} failed`);

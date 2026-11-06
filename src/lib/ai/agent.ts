@@ -12,6 +12,7 @@ import { templatePlanOffer, templateReminder } from "../reminders";
 import { buildPlan, planRequested, type PlanCadence } from "../plan";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, ReminderStage, Settings, ToolTraceEntry } from "../types";
 import { issueApproval } from "../approval";
+import { describeRules, type AutopilotLogEntry, type AutopilotRules } from "../autopilot";
 import { isSandbox, type PayPalConfig, type PayPalInvoice } from "../paypal/client";
 import { payPalToInvoice } from "../paypal/mapping";
 import { runToolkitTool } from "../paypal/toolkit";
@@ -29,6 +30,8 @@ export interface AgentContext {
   cfg?: PayPalConfig | null;
   /** The user's latest message: used to honour an explicitly requested reminder tone. */
   userText?: string;
+  /** Autopilot state and recent activity log, as the browser holds it. */
+  autopilot?: { active: boolean; rules: AutopilotRules; log: AutopilotLogEntry[] };
 }
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
@@ -117,6 +120,11 @@ export const TOOLS: ToolSpec[] = [
         cadence: { type: "string", enum: ["weekly", "monthly"] },
       },
     },
+  },
+  {
+    name: "get_autopilot_activity",
+    description: "What Autopilot (chasing on its own within the owner's signed mandate) has done: reminders sent, held for the owner's OK or skipped, each with its reason, plus the current limits.",
+    parameters: { type: "object", properties: {} },
   },
   {
     name: "propose_mark_paid",
@@ -372,6 +380,18 @@ async function runTool(name: string, args: Record<string, unknown>, ctx: AgentCo
         pending: withApproval({ type: "mark_paid", invoiceId: inv.id, invoiceNumber: inv.number, customerName: inv.customerName, amount: balance(inv) }, ctx),
       };
     }
+    case "get_autopilot_activity": {
+      const a = ctx.autopilot;
+      const log = (a?.log ?? []).slice(-15).reverse();
+      return {
+        result: {
+          autopilot: a?.active ? "on" : "off",
+          limits: a ? describeRules(a.rules) : null,
+          recent: log.map((e) => ({ at: e.at, action: e.action, invoice: e.invoiceNumber ?? null, customer: e.customerName ?? null, what: e.reason })),
+        },
+        trace: { tool: name, args, summary: `${log.length} Autopilot entries`, via: "ledger" },
+      };
+    }
     default:
       return { result: { error: `Unknown tool ${name}` }, trace: { tool: name, args, summary: "unknown tool" } };
   }
@@ -387,6 +407,7 @@ Always use tools to get numbers — never guess figures. State only facts return
 "Prepare a letter before claim" or "claim pack" for a customer: call prepare_claim_pack. It is read-only and sends nothing; the letter opens from the button under your reply. It is a template, not legal advice.
 For anything that sends to a customer or changes an invoice (send_invoice_reminder, create_invoice, propose_mark_paid, offer_payment_plan) call the tool: it will NOT happen until the user taps the card's button in the app ("Review & send" for reminders, "Review invoice" for new invoices, "Confirm paid" for payments, "Set up plan" for payment plans), so tell them to tap that button.
 "Offer X a 3-month plan", "spread it over 4 weeks" or "instalments" means offer_payment_plan (a 3-month plan is 3 monthly instalments; 4 weeks is 4 weekly).
+Questions about Autopilot ("what did autopilot do?") are answered from get_autopilot_activity only.
 "Chase X", "chase my worst payer" or "remind X" is a request to act: find the customer (rank_payers or list_invoices if needed) and then call send_invoice_reminder in the same turn, rather than stopping to ask whether to send one.
 Invoices are issued and paid through PayPal${ctx.mode === "demo" ? " (currently demo mode with a mock PayPal backend)" : ""}.`;
 }
@@ -550,6 +571,23 @@ async function runRulesAgent(messages: ChatMessage[], ctx: AgentContext): Promis
       ),
       link: out.link,
     };
+  }
+
+  // Autopilot: what it did, from the activity log
+  if (/\bauto-?pilot\b|on (?:its|your) own\b/.test(q)) {
+    const out = await call("get_autopilot_activity");
+    const r = out.result as { autopilot: string; limits: string | null; recent: { at: string; action: string; what: string }[] };
+    const head = r.autopilot === "on" ? `**Autopilot is on.** Limits you signed: ${r.limits}.` : "**Autopilot is off**, so nothing goes out without your OK. Turn it on from the Autopilot button.";
+    if (!r.recent.length) return respond(`${head}\n\nNo Autopilot activity yet.`);
+    const fmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    const sent = r.recent.filter((e) => e.action === "send").length;
+    const held = r.recent.filter((e) => e.action === "hold").length;
+    return respond(
+      `${head}\n\nRecently it sent **${sent}** reminder${sent === 1 ? "" : "s"} and held **${held}** for your OK:\n${r.recent
+        .slice(0, 8)
+        .map((e) => bullet(`${e.what} (${fmt.format(new Date(e.at))})`))
+        .join("\n")}`,
+    );
   }
 
   // 0) QR code for an invoice

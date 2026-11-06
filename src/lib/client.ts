@@ -3,6 +3,7 @@
 
 import { demoPayLink } from "./format";
 import { seedInvoices } from "./seed";
+import { DEFAULT_RULES, type AutopilotLogEntry, type AutopilotRules } from "./autopilot";
 import { DEFAULT_SETTINGS, type Invoice, type Mode, type Settings } from "./types";
 
 const K = {
@@ -12,7 +13,15 @@ const K = {
   liveReminders: "sorted.live.reminders.v1",
   liveSnapshot: "sorted.live.snapshot.v1",
   paypalCreds: "sorted.paypal.sandbox.v1",
+  autopilot: "sorted.autopilot.v1",
+  autopilotLog: "sorted.autopilot.log.v1",
 };
+
+/** Autopilot rules plus the server-signed mandate for them (per mode). */
+export interface AutopilotState {
+  rules: AutopilotRules;
+  mandate?: { token: string; expiresAt: string; mode: Mode };
+}
 
 export interface PayPalCreds {
   clientId: string;
@@ -65,6 +74,13 @@ export const storage = {
     return c && c.clientId && c.clientSecret ? c : null;
   },
   savePayPalCreds: (c: PayPalCreds) => write(K.paypalCreds, c),
+  loadAutopilot: (): AutopilotState => {
+    const a = read<Partial<AutopilotState>>(K.autopilot, {});
+    return { rules: { ...DEFAULT_RULES, ...(a.rules ?? {}) }, mandate: a.mandate };
+  },
+  saveAutopilot: (a: AutopilotState) => write(K.autopilot, a),
+  loadAutopilotLog: () => read<AutopilotLogEntry[]>(K.autopilotLog, []),
+  saveAutopilotLog: (l: AutopilotLogEntry[]) => write(K.autopilotLog, l),
   clearPayPalCreds: () => {
     try {
       window.localStorage.removeItem(K.paypalCreds);
