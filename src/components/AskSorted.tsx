@@ -1,5 +1,6 @@
 "use client";
 
+import type { AutopilotLogEntry, AutopilotRules } from "@/lib/autopilot";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client";
 import { gbp } from "@/lib/format";
@@ -7,7 +8,7 @@ import type { PaymentEvent } from "@/lib/events";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, Settings, ToolTraceEntry } from "@/lib/types";
 import { EngineBadge, RichText, Spinner, StageBadge } from "./ui";
 
-const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer", "QR code for my worst payer"];
+const SUGGESTIONS = ["Who owes me what?", "How much did I earn last month?", "Who's my latest payer?", "What's overdue?", "Chase my worst payer", "What did Autopilot do?", "QR code for my worst payer"];
 
 type UIMsg = ChatMessage & { meta?: Pick<ChatResponse, "engine" | "toolTrace" | "pendingAction" | "qr">; actionState?: "done" | "dismissed" };
 
@@ -24,12 +25,15 @@ export function AskSorted({
   invoices,
   onConfirm,
   events = [],
+  autopilot,
 }: {
   mode: Mode;
   settings: Settings;
   invoices: Invoice[];
   onConfirm: (a: PendingAction) => Promise<boolean>;
   events?: PaymentEvent[];
+  /** Autopilot state and activity log, so "what did autopilot do?" is answered from it. */
+  autopilot?: { active: boolean; rules: AutopilotRules; log: AutopilotLogEntry[] };
 }) {
   const [msgs, setMsgs] = useState<UIMsg[]>([
     {
@@ -80,6 +84,7 @@ export function AskSorted({
         messages: next.slice(1).map(({ role, content }) => ({ role, content })),
         ledger: invoices,
         settings,
+        autopilot: autopilot ? { active: autopilot.active, rules: autopilot.rules, log: autopilot.log.slice(-25) } : undefined,
       });
       setMsgs((m) => [...m, { role: "assistant", content: res.reply, meta: { engine: res.engine, toolTrace: res.toolTrace, pendingAction: res.pendingAction, qr: res.qr } }]);
     } catch (e) {

@@ -298,6 +298,7 @@ export function useSorted() {
     toasts,
     toast,
     events,
+    upsert,
     reportEvents,
   };
 }

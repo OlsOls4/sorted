@@ -1,4 +1,5 @@
 import { runAgent, type AgentContext } from "@/lib/ai/agent";
+import { sanitizeRules, type AutopilotLogEntry } from "@/lib/autopilot";
 import { asLedger, readJSON, sanitizeSettings } from "@/lib/api";
 import { errorResponse, getBackend, resolveContext } from "@/lib/backend";
 import { PayPalClient, isSandbox, type PayPalInvoice } from "@/lib/paypal/client";
@@ -51,8 +52,27 @@ export async function POST(req: Request) {
     ledger = l.length ? l : seedInvoices(settings.hourlyRate);
     ledgerVia = "mock-paypal";
   }
-  const ctx: AgentContext = { ledger, settings, mode, ledgerVia, cfg: mode === "live" ? rc.cfg : null };
+  const ctx: AgentContext = { ledger, settings, mode, ledgerVia, cfg: mode === "live" ? rc.cfg : null, autopilot: readAutopilot(body.autopilot) };
   const res = await runAgent(messages, ctx);
   res.toolTrace = [...preTrace, ...res.toolTrace];
   return Response.json({ mode, ...res });
+}
+
+/** The browser's Autopilot state, trimmed to plain strings (it's only ever read back to the owner). */
+function readAutopilot(v: unknown): AgentContext["autopilot"] {
+  if (!v || typeof v !== "object") return undefined;
+  const a = v as { active?: unknown; rules?: unknown; log?: unknown };
+  const str = (x: unknown, n: number) => (typeof x === "string" ? x.slice(0, n) : undefined);
+  const actions = ["send", "hold", "skip", "note"] as const;
+  const log: AutopilotLogEntry[] = (Array.isArray(a.log) ? a.log : [])
+    .slice(-25)
+    .filter((e): e is Record<string, unknown> => !!e && typeof e === "object" && typeof (e as AutopilotLogEntry).reason === "string")
+    .map((e) => ({
+      at: str(e.at, 40) ?? "",
+      action: actions.find((x) => x === e.action) ?? "note",
+      invoiceNumber: str(e.invoiceNumber, 40),
+      customerName: str(e.customerName, 120),
+      reason: str(e.reason, 300) ?? "",
+    }));
+  return { active: a.active === true, rules: sanitizeRules(a.rules), log };
 }

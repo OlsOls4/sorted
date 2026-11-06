@@ -7,6 +7,7 @@ import { gbp } from "@/lib/format";
 import { totals } from "@/lib/ledger";
 import type { EngineInfo, Invoice, InvoiceDraft, PendingAction, ReminderStage } from "@/lib/types";
 import { AskSorted } from "./AskSorted";
+import { AutopilotActivity, AutopilotModal, useAutopilot } from "./Autopilot";
 import { InvoiceDetails } from "./InvoiceDetails";
 import { InvoiceEditor } from "./InvoiceEditor";
 import { JobNotes } from "./JobNotes";
@@ -26,6 +27,8 @@ export function Dashboard() {
   const [confirmPaid, setConfirmPaid] = useState<Invoice | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showConnect, setShowConnect] = useState(false);
+  const [showAutopilot, setShowAutopilot] = useState(false);
+  const ap = useAutopilot({ mode: c.mode, ready: c.ready, invoices: c.invoices, settings: c.settings, upsert: c.upsert, toast: c.toast });
   // The demo notice is a small dismissible pill (remembered for this browser session).
   const [pillHidden, setPillHidden] = useState(false);
   useEffect(() => {
@@ -147,6 +150,16 @@ export function Dashboard() {
                 {c.syncing ? <Spinner /> : "↻"} <span className="hidden sm:inline">Sync</span>
               </button>
             )}
+            <button
+              type="button"
+              className="btn-ghost px-2 py-1.5 text-xs sm:px-3"
+              onClick={() => setShowAutopilot(true)}
+              title={ap.active ? "Autopilot is chasing within your signed limits" : "Let Sorted chase late payers within limits you sign"}
+              aria-label={`Autopilot ${ap.active ? "on" : "off"}`}
+            >
+              <span aria-hidden="true" className={`inline-block h-2 w-2 rounded-full ${ap.active ? "bg-brand" : "bg-line"}`} />
+              Autopilot<span className="hidden sm:inline">{ap.active ? " on" : ""}</span>
+            </button>
             <button type="button" className="btn-ghost px-2.5 py-1.5" onClick={() => setShowSettings(true)} aria-label="Business settings" title="Business settings">
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="3" />
@@ -173,10 +186,18 @@ export function Dashboard() {
               <div className="min-w-0 space-y-5 lg:col-span-2">
                 <JobNotes mode={c.mode} settings={c.settings} onDraft={onDraft} onError={onError} />
                 <OverduePanel invoices={c.invoices} onChase={onRemind} />
+                <AutopilotActivity
+                  ap={ap}
+                  onOpen={() => setShowAutopilot(true)}
+                  onReview={(id) => {
+                    const inv = c.invoices.find((i) => i.id === id);
+                    if (inv) setReminding({ inv });
+                  }}
+                />
               </div>
               {/* On desktop the chat fills the column's height without stretching the row. */}
               <div className="relative min-w-0 lg:min-h-[560px]">
-                <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} events={c.events} />
+                <AskSorted mode={c.mode} settings={c.settings} invoices={c.invoices} onConfirm={onConfirmAction} events={c.events} autopilot={{ active: ap.active, rules: ap.rules, log: ap.log }} />
               </div>
             </div>
 
@@ -184,6 +205,8 @@ export function Dashboard() {
           </>
         )}
       </main>
+
+      {showAutopilot && <AutopilotModal ap={ap} mode={c.mode} onClose={() => setShowAutopilot(false)} />}
 
       {editing && (
         <InvoiceEditor
