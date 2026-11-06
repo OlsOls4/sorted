@@ -29,6 +29,7 @@ execFileSync(
     path.join(root, "src/lib/qr.ts"),
     path.join(root, "src/lib/reminders.ts"),
     path.join(root, "src/lib/claim.ts"),
+    path.join(root, "src/lib/plan.ts"),
   ],
   { stdio: "inherit" },
 );
@@ -620,6 +621,86 @@ await step("Reminders: pay link, Pay in 3 (private, £20–£3,000), B2B waiver"
   check(/Late Payment of Commercial Debts/.test(fin.body) && /pay the invoice in full today .* waive the statutory interest/.test(fin.body), "B2B final: Act + pay-today waiver");
   check(!/Pay in 3/.test(fin.body), "no Pay in 3 for business");
   check(!/waive/.test(REM.templateReminder(inv, S, "final", TODAY).body), "no waiver for private customers");
+});
+
+await step("Payment plans: pence-exact instalments, dates, progress, Ask Sorted wording", async () => {
+  const PL = require(path.join(out, "lib/plan.js"));
+  const a = PL.planInstalments(100, 3, "monthly", "2026-11-06");
+  check(a.map((i) => i.amount).join() === "33.33,33.33,33.34", `£100 / 3 → 33.33, 33.33, 33.34 (${a.map((i) => i.amount)})`);
+  check(a.map((i) => i.dueDate).join() === "2026-11-06,2026-12-06,2027-01-06", "monthly dates roll over the year");
+  const sum = (xs) => xs.reduce((s, i) => s + Math.round(i.amount * 100), 0);
+  for (const [t, n] of [[491.4, 3], [0.1, 2], [1234.57, 4], [182, 4], [99.99, 2]]) {
+    const xs = PL.planInstalments(t, n, "weekly", "2026-11-06");
+    check(sum(xs) === Math.round(t * 100) && xs.every((i) => Number(i.amount.toFixed(2)) === i.amount) && xs[n - 1].amount >= xs[0].amount, `£${t} / ${n}: whole pence, sums exactly, last absorbs rounding`);
+  }
+  check(PL.planInstalments(80, 4, "weekly", "2026-11-06").map((i) => i.dueDate).join() === "2026-11-06,2026-11-13,2026-11-20,2026-11-27", "weekly: 7 days apart");
+  check(PL.planInstalments(90, 2, "monthly", "2026-01-31")[1].dueDate === "2026-02-28", "31 Jan + 1 month clamps to 28 Feb");
+  let threw = 0;
+  for (const bad of [[100, 1, "monthly"], [100, 5, "monthly"], [100, 2.5, "monthly"], [100, 3, "daily"], [0.02, 3, "weekly"]]) {
+    try { PL.planInstalments(bad[0], bad[1], bad[2], "2026-11-06"); } catch { threw++; }
+  }
+  check(threw === 5, "rejects 1 or 5 instalments, fractions, other cadences, too little to split");
+  const plan = PL.buildPlan(300, 60, 3, "monthly", "2026-11-06");
+  check(plan.minimumAmountDue === 100 && plan.planTotal === 300 && plan.alreadyPaid === 60, "plan: minimum = instalment, tracks what was already paid");
+  const p0 = PL.planProgress(plan, 60, "2026-11-06");
+  check(!p0.onTrack && p0.dueByToday === 100 && p0.next.n === 1 && p0.remaining === 300, "first instalment due today, unpaid → not on track");
+  const p1 = PL.planProgress(plan, 160, "2026-11-20");
+  check(p1.onTrack && p1.instalmentsPaid === 1 && p1.next.n === 2 && p1.paidOnPlan === 100 && p1.remaining === 200, "one instalment paid → on plan, next is #2");
+  check(!PL.planProgress(plan, 160, "2026-12-07").onTrack, "second instalment missed → behind");
+  const tag = PL.withPlanTag("Created by Sorted from job notes: Boiler service", plan);
+  check(/\[Sorted plan: 3 monthly from 2026-11-06 on 300.00 after 60.00\]$/.test(tag) && PL.stripPlanTag(tag) === "Created by Sorted from job notes: Boiler service", "memo tag round-trips");
+  check(JSON.stringify(PL.planFromMemo(tag)) === JSON.stringify(plan), "plan rebuilt from the memo tag");
+  check(PL.withPlanTag("x".repeat(600), plan).length <= 500, "memo stays within PayPal's 500 chars");
+  const r = (q) => JSON.stringify(PL.planRequested(q));
+  check(r("offer Harbourside a 3-month plan") === JSON.stringify({ count: 3, cadence: "monthly" }), "'3-month plan' → 3 monthly");
+  check(r("can Dave pay in 4 weekly instalments") === JSON.stringify({ count: 4, cadence: "weekly" }), "'4 weekly instalments' → 4 weekly");
+  check(r("put Mrs Patel on a payment plan") === JSON.stringify({ count: 3, cadence: "monthly" }), "'payment plan' → default 3 monthly");
+  check(r("spread it over two months") === JSON.stringify({ count: 2, cadence: "monthly" }), "'spread it over two months' → 2 monthly");
+  check(PL.planRequested("chase Harbourside") === undefined && PL.planRequested("what's my plan for today") === undefined, "no plan asked → undefined");
+});
+
+await step("Payment plans: PayPal payload, PARTIALLY_PAID sync + webhook, offer email, approval", async () => {
+  const PL = require(path.join(out, "lib/plan.js"));
+  const raw = {
+    id: "INV2-PLAN", status: "SENT",
+    detail: { invoice_number: "INV-1007", invoice_date: "2026-09-01", currency_code: "GBP", memo: "Created by Sorted from job notes: Bathroom refit",
+      payment_term: { term_type: "DUE_ON_DATE_SPECIFIED", due_date: "2026-09-15" }, metadata: { create_time: "x", recipient_view_url: "https://www.sandbox.paypal.com/invoice/p/#PLAN" } },
+    invoicer: { business_name: "Harris" },
+    primary_recipients: [{ billing_info: { business_name: "Harbourside Lettings Ltd", email_address: "accounts@harbourside.example.com" } }],
+    items: [{ name: "Refit", quantity: "1", unit_amount: { currency_code: "GBP", value: "900.00" }, unit_of_measure: "AMOUNT" }],
+    configuration: { partial_payment: { allow_partial_payment: false }, allow_tip: false, tax_calculated_after_discount: true, tax_inclusive: false },
+    amount: { currency_code: "GBP", value: "900.00" }, due_amount: { currency_code: "GBP", value: "900.00" }, links: [{ href: "x" }],
+  };
+  const plan = PL.buildPlan(900, 0, 3, "monthly", "2026-11-06");
+  const body = MAP.planUpdatePayload(raw, plan);
+  check(body.configuration.partial_payment.allow_partial_payment === true && body.configuration.partial_payment.minimum_amount_due.value === "300.00" && body.configuration.partial_payment.minimum_amount_due.currency_code === "GBP", "PUT body: partial payments on, minimum_amount_due = instalment");
+  check(body.configuration.allow_tip === false && body.configuration.tax_inclusive === false, "other configuration kept");
+  check(!("status" in body) && !("amount" in body) && !("due_amount" in body) && !("links" in body) && !body.detail.metadata, "read-only fields stripped");
+  check(body.items === raw.items && body.primary_recipients === raw.primary_recipients && body.detail.payment_term.due_date === "2026-09-15", "items, recipient and terms unchanged");
+  check(/\[Sorted plan: 3 monthly/.test(body.detail.memo) && raw.configuration.partial_payment.allow_partial_payment === false, "plan tagged in memo; input not mutated");
+  const after = { ...raw, ...body, status: "PARTIALLY_PAID", amount: raw.amount, due_amount: { currency_code: "GBP", value: "600.00" }, payments: { paid_amount: { currency_code: "GBP", value: "300.00" } } };
+  const inv = MAP.payPalToInvoice(after, true);
+  check(inv.status === "PARTIALLY_PAID" && inv.amountPaid === 300 && inv.plan?.count === 3 && inv.plan.minimumAmountDue === 300, "sync: PARTIALLY_PAID, amountPaid from paid_amount, plan rebuilt");
+  check(inv.jobSummary === "Bathroom refit", `plan tag kept out of the job summary (${inv.jobSummary})`);
+  check(MAP.draftToPayPal(baseDraft, S).configuration.partial_payment.allow_partial_payment === false, "new invoices still take full payment only");
+  const wh = WH.toPaymentEvent({ event_type: "INVOICING.INVOICE.PAID", create_time: "2026-11-06T10:00:00Z", resource: after }, null);
+  check(wh && wh.kind === "part_paid" && wh.amountPaid === 300 && wh.remaining === 600, `webhook part payment → part_paid (${wh?.message})`);
+  check(wh.message === "Harbourside Lettings Ltd made a part payment on INV-1007: £300.00 paid so far, £600.00 left.", "part payment message");
+  const before = MAP.payPalToInvoice(raw, true);
+  const d = EV.diffLedger([before], [inv]);
+  check(d.length === 1 && d[0].kind === "part_paid", "live sync diff spots a new part payment");
+  check(EV.diffLedger([inv], [inv]).length === 0, "same amount paid → no event");
+  const mail = REM.templatePlanOffer({ ...inv, payerViewUrl: "https://www.sandbox.paypal.com/invoice/p/#PLAN" }, S, plan);
+  check(mail.subject === "A payment plan for invoice INV-1007 (£900.00)" && mail.body.includes("https://www.sandbox.paypal.com/invoice/p/#PLAN"), "offer email: subject + PayPal link");
+  check(mail.body.includes("3 monthly payments of £300.00") && mail.body.includes("1. £300.00 by 6 Nov 2026") && mail.body.includes("3. £300.00 by 6 Jan 2027"), "offer email: schedule in UK dates");
+  check(/^Hi Accounts team,/.test(mail.body) && !/[\u{1F300}-\u{1FAFF}]/u.test(mail.body), "business greeting, no emoji");
+  const uneven = REM.templatePlanOffer(inv, S, PL.buildPlan(100, 0, 3, "weekly", "2026-11-06"));
+  check(uneven.body.includes("(£33.33, £33.33, £33.34)"), "uneven split listed in full");
+  const tok = APR.issueApproval("offer_plan", "INV2-PLAN", "live").token;
+  check(APR.verifyApproval(tok, "offer_plan", "INV2-PLAN", "live").ok, "offer_plan approval verifies");
+  check(!APR.verifyApproval(tok, "offer_plan", "INV2-PLAN", "live").ok, "and is single use");
+  check(!APR.verifyApproval(APR.issueApproval("send_reminder", "INV2-PLAN", "live").token, "offer_plan", "INV2-PLAN", "live").ok, "a reminder approval can't set up a plan");
+  check(APR.APPROVAL_ACTIONS.includes("offer_plan"), "offer_plan is an approvable action");
 });
 
 await step("parse.ts: notes that mention VAT override the AI's/settings' VAT decision", async () => {

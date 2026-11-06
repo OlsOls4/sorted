@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, storage, type PayPalCreds } from "@/lib/client";
-import type { EngineInfo, Invoice, InvoiceDraft, Mode, ReminderStage, Settings } from "@/lib/types";
+import type { EngineInfo, Invoice, InvoiceDraft, Mode, ReminderStage, Settings, PlanCadence } from "@/lib/types";
 import { DEFAULT_SETTINGS } from "@/lib/types";
 import { diffLedger, type PaymentEvent } from "@/lib/events";
 
@@ -51,7 +51,7 @@ export function useSorted() {
   const reportEvents = useCallback(
     (evs: PaymentEvent[]) => {
       const fresh = evs.filter((e) => {
-        const k = `${e.invoiceId}:${e.kind}`;
+        const k = `${e.invoiceId}:${e.kind}${e.kind === "part_paid" ? `:${e.amountPaid ?? ""}` : ""}`;
         if (seenEvents.current.has(k)) return false;
         seenEvents.current.add(k);
         return true;
@@ -61,13 +61,14 @@ export function useSorted() {
         prev.map((inv) => {
           const e = fresh.find((x) => x.invoiceId === inv.id);
           if (!e) return inv;
+          if (e.kind === "part_paid") return { ...inv, status: "PARTIALLY_PAID", amountPaid: Math.max(inv.amountPaid, e.amountPaid ?? inv.amountPaid) };
           return e.kind === "paid"
             ? { ...inv, status: inv.status === "MARKED_AS_PAID" ? inv.status : "PAID", amountPaid: inv.total, paidDate: e.paidDate ?? inv.paidDate }
             : { ...inv, status: "CANCELLED" };
         }),
       );
       setEvents((x) => [...x, ...fresh].slice(-30));
-      for (const e of fresh) toast(e.kind === "paid" ? "ok" : "info", e.message);
+      for (const e of fresh) toast(e.kind === "cancelled" ? "info" : "ok", e.message);
     },
     [toast],
   );
@@ -158,7 +159,7 @@ export function useSorted() {
 
   /** A signed approval for one write, minted at the moment the user confirms. */
   const approve = useCallback(
-    async (action: "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice", invoiceId: string) =>
+    async (action: "create_invoice" | "send_reminder" | "mark_paid" | "cancel_invoice" | "offer_plan", invoiceId: string) =>
       (await api<{ token: string }>("/api/approvals", mode, { action, invoiceId })).token,
     [mode],
   );
@@ -197,6 +198,23 @@ export function useSorted() {
       const res = await api<{ invoice: Invoice }>(`/api/invoices/${encodeURIComponent(inv.id)}/mark-paid`, mode, { invoice: inv, approval: token });
       upsert(res.invoice);
       toast("ok", `${inv.number} marked as paid.`);
+      return res.invoice;
+    },
+    [mode, upsert, toast, approve],
+  );
+
+  /** Offer a payment plan: PayPal starts accepting part payments of the instalment size. */
+  const offerPlan = useCallback(
+    async (inv: Invoice, count: number, cadence: PlanCadence, approval?: string) => {
+      const token = approval ?? (await approve("offer_plan", inv.id));
+      const res = await api<{ invoice: Invoice; via: string }>(`/api/invoices/${encodeURIComponent(inv.id)}/plan`, mode, {
+        invoice: inv,
+        count,
+        cadence,
+        approval: token,
+      });
+      upsert(res.invoice);
+      toast("ok", `${inv.number} is on a ${count}-payment ${cadence} plan${res.via === "paypal-rest" ? ": PayPal now accepts part payments" : ""}.`);
       return res.invoice;
     },
     [mode, upsert, toast, approve],
@@ -291,6 +309,7 @@ export function useSorted() {
     createInvoice,
     sendReminder,
     markPaid,
+    offerPlan,
     cancelInvoice,
     resetDemo,
     connectPayPal,

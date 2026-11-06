@@ -5,7 +5,8 @@
 // dashboard tab (BroadcastChannel), mirroring the live INVOICING.INVOICE.PAID webhook.
 import { useEffect, useState } from "react";
 import { eventFromInvoice } from "@/lib/events";
-import { balance, gbp, isOpen, payLaterEligible, todayISO, ukDate } from "@/lib/format";
+import { balance, gbp, isOpen, payLaterEligible, round2, todayISO, ukDate } from "@/lib/format";
+import { planProgress } from "@/lib/plan";
 import type { Invoice } from "@/lib/types";
 import { PayPalMark } from "./ui";
 
@@ -36,16 +37,21 @@ export function MockPayerPage({ id }: { id: string }) {
     return () => clearTimeout(t);
   }, [id]);
 
-  function pay(method: "paypal" | "payin3") {
+  function pay(method: "paypal" | "payin3" | "instalment") {
     if (!inv) return;
-    const updated: Invoice = { ...inv, status: "PAID", amountPaid: inv.total, paidDate: todayISO() };
+    const next = inv.plan ? planProgress(inv.plan, inv.amountPaid, todayISO()).next : undefined;
+    const part = method === "instalment" && next ? Math.min(next.amount, balance(inv)) : 0;
+    const clears = !part || round2(inv.amountPaid + part) >= inv.total;
+    const updated: Invoice = clears
+      ? { ...inv, status: "PAID", amountPaid: inv.total, paidDate: todayISO() }
+      : { ...inv, status: "PARTIALLY_PAID", amountPaid: round2(inv.amountPaid + part) };
     try {
       const all = JSON.parse(localStorage.getItem(KEY) ?? "[]") as Invoice[];
       localStorage.setItem(KEY, JSON.stringify(all.map((i) => (i.id === inv.id ? updated : i))));
     } catch {
       /* ignore */
     }
-    const ev = eventFromInvoice(updated, "paid", "demo");
+    const ev = eventFromInvoice(updated, clears ? "paid" : "part_paid", "demo");
     try {
       const ch = new BroadcastChannel("sorted-pay");
       ch.postMessage(ev);
@@ -54,7 +60,7 @@ export function MockPayerPage({ id }: { id: string }) {
       /* old browser */
     }
     setInv(updated);
-    setPaid(true);
+    setPaid(clears);
     void method;
   }
 
@@ -110,6 +116,11 @@ export function MockPayerPage({ id }: { id: string }) {
                 </div>
               ) : (
                 <div className="space-y-2">
+                  {inv.plan && planProgress(inv.plan, inv.amountPaid, todayISO()).next && (
+                    <button type="button" className="btn w-full justify-center rounded-full border-2 border-[#003087] py-2.5 text-sm font-bold text-[#003087]" onClick={() => pay("instalment")}>
+                      Pay this instalment: {gbp(planProgress(inv.plan, inv.amountPaid, todayISO()).next!.amount)}
+                    </button>
+                  )}
                   <button type="button" className="btn w-full justify-center rounded-full bg-[#ffc439] py-3 font-bold text-[#003087] hover:brightness-95" onClick={() => pay("paypal")}>
                     Pay with PayPal
                   </button>

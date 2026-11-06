@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/client";
-import { gbp } from "@/lib/format";
+import { gbp, ukDate } from "@/lib/format";
 import type { PaymentEvent } from "@/lib/events";
 import type { ChatMessage, ChatResponse, Invoice, Mode, PendingAction, Settings, ToolTraceEntry } from "@/lib/types";
 import { EngineBadge, RichText, Spinner, StageBadge } from "./ui";
@@ -145,7 +145,7 @@ export function AskSorted({
                           title={`${t.summary}${t.via ? ` · via ${VIA_LABEL[t.via]}` : ""}\nargs: ${JSON.stringify(t.args)}`}
                         >
                           {t.tool}
-                          {m.meta?.pendingAction && /send_invoice_reminder|create_invoice|propose_mark_paid/.test(t.tool)
+                          {m.meta?.pendingAction && /send_invoice_reminder|create_invoice|propose_mark_paid|offer_payment_plan/.test(t.tool)
                             ? " · drafted, awaiting your OK"
                             : t.via && t.via !== "ledger"
                               ? ` · ${VIA_LABEL[t.via]}`
@@ -202,7 +202,13 @@ export function AskSorted({
 function ActionCard({ a, state, onConfirm, onDismiss }: { a: PendingAction; state?: "done" | "dismissed"; onConfirm: () => void; onDismiss: () => void }) {
   const [busy, setBusy] = useState(false);
   const title =
-    a.type === "send_reminder" ? `Send reminder to ${a.customerName}` : a.type === "create_invoice" ? `Invoice ${a.draft.customerName || "new customer"}` : `Mark ${a.invoiceNumber} as paid (${gbp(a.amount)})`;
+    a.type === "send_reminder"
+      ? `Send reminder to ${a.customerName}`
+      : a.type === "create_invoice"
+        ? `Invoice ${a.draft.customerName || "new customer"}`
+        : a.type === "offer_plan"
+          ? `Payment plan for ${a.customerName}: ${a.count} ${a.cadence} payments`
+          : `Mark ${a.invoiceNumber} as paid (${gbp(a.amount)})`;
   return (
     <div className="mt-3 rounded-xl border border-brand/30 bg-white p-3">
       <div className="mb-1 text-xs font-bold tracking-wide text-brand uppercase">Needs your OK</div>
@@ -216,8 +222,17 @@ function ActionCard({ a, state, onConfirm, onDismiss }: { a: PendingAction; stat
           <pre className="mt-1 font-sans whitespace-pre-wrap">{a.body}</pre>
         </details>
       )}
+      {a.type === "offer_plan" && (
+        <ol className="mt-1 list-inside list-decimal text-xs text-muted">
+          {a.instalments.map((i) => (
+            <li key={i.n}>
+              {gbp(i.amount)} by {ukDate(i.dueDate)}
+            </li>
+          ))}
+        </ol>
+      )}
       {state === "done" ? (
-        <div className="mt-2 text-xs font-semibold text-brand">{a.type === "mark_paid" ? "✓ Marked as paid" : "✓ Opened for your review"}</div>
+        <div className="mt-2 text-xs font-semibold text-brand">{a.type === "mark_paid" ? "✓ Marked as paid" : a.type === "offer_plan" ? "✓ Plan set up; offer opened for your review" : "✓ Opened for your review"}</div>
       ) : state === "dismissed" ? (
         <div className="mt-2 text-xs text-muted">Cancelled</div>
       ) : (
@@ -235,7 +250,7 @@ function ActionCard({ a, state, onConfirm, onDismiss }: { a: PendingAction; stat
             }}
           >
             {busy ? <Spinner /> : null}
-            {a.type === "send_reminder" ? "Review & send" : a.type === "create_invoice" ? "Review invoice" : "Confirm paid"}
+            {a.type === "send_reminder" ? "Review & send" : a.type === "create_invoice" ? "Review invoice" : a.type === "offer_plan" ? "Set up plan" : "Confirm paid"}
           </button>
           <button className="btn-ghost px-3 py-1.5 text-xs" onClick={onDismiss}>
             Cancel

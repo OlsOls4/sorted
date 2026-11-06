@@ -251,6 +251,20 @@ export class PayPalClient {
     });
   }
 
+  /**
+   * Full update of an invoice (PUT /v2/invoicing/invoices/{id}). A sent invoice can be
+   * updated; PayPal does not email anyone here (send_to_recipient=false): Sorted's
+   * own reviewed reminder tells the customer.
+   */
+  async updateInvoice(id: string, payload: unknown): Promise<PayPalInvoice> {
+    const { data } = await this.request<PayPalInvoice>(
+      "PUT",
+      `/v2/invoicing/invoices/${encodeURIComponent(id)}?send_to_recipient=false&send_to_invoicer=false`,
+      payload,
+    );
+    return data;
+  }
+
   /** Deletes a DRAFT (or cancelled) invoice. */
   async deleteInvoice(id: string) {
     await this.request("DELETE", `/v2/invoicing/invoices/${encodeURIComponent(id)}`);
@@ -336,4 +350,13 @@ export interface PayPalInvoice {
   amount?: { currency_code?: string; value?: string; breakdown?: { item_total?: PayPalMoney; tax_total?: PayPalMoney } };
   due_amount?: PayPalMoney;
   payments?: { paid_amount?: PayPalMoney; transactions?: { payment_date?: string; amount?: PayPalMoney }[] };
+  configuration?: {
+    partial_payment?: { allow_partial_payment?: boolean; minimum_amount_due?: PayPalMoney };
+    allow_tip?: boolean;
+    tax_calculated_after_discount?: boolean;
+    tax_inclusive?: boolean;
+    template_id?: string;
+  };
+  invoicer?: unknown;
+  links?: unknown;
 }

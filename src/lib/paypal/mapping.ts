@@ -4,6 +4,7 @@ import { computeTotals, round2 } from "../format";
 import { detectCustomerType } from "../parser";
 import type { Invoice, InvoiceDraft, InvoiceStatus, LineItem, Settings } from "../types";
 import type { PayPalInvoice } from "./client";
+import { planFromMemo, stripPlanTag, withPlanTag, type PaymentPlan } from "../plan";
 
 function splitName(full: string): { given_name: string; surname: string } {
   // "Mrs Patel" keeps its title (given "Mrs", surname "Patel") so reminders say "Hi Mrs Patel";
@@ -104,7 +105,7 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     customerName,
     customerEmail: email,
     customerType: bi?.business_name ? "business" : detectCustomerType(customerName, email),
-    jobSummary: (p.detail.memo?.replace(/^Created by Sorted from job notes:\s*/, "").replace(/^\[Sorted demo(?::[a-z]+)?\]\s*/, "") || items[0]?.description || "").slice(0, 120),
+    jobSummary: (stripPlanTag(p.detail.memo ?? "").replace(/^Created by Sorted from job notes:\s*/, "").replace(/^\[Sorted demo(?::[a-z]+)?\]\s*/, "") || items[0]?.description || "").slice(0, 120),
     items,
     vatEnabled,
     vatRate: vatPercent || 20,
@@ -124,5 +125,31 @@ export function payPalToInvoice(p: PayPalInvoice, sandbox: boolean): Invoice {
     merchantViewUrl: p.detail.metadata?.invoicer_view_url ?? `${host}/invoice/details/${p.id}`,
     reminders: [],
     source: "paypal",
+    ...(planFromMemo(p.detail.memo) && p.configuration?.partial_payment?.allow_partial_payment !== false ? { plan: planFromMemo(p.detail.memo) } : {}),
   };
+}
+
+/** Read-only fields PayPal computes or owns; never sent back on a full update. */
+const READ_ONLY = ["status", "links", "amount", "due_amount", "gratuity", "payments", "refunds"] as const;
+
+/**
+ * Body for PUT /v2/invoicing/invoices/{id} (full update) that turns on partial
+ * payments with minimum_amount_due = the instalment, keeping everything else on
+ * the invoice as PayPal returned it. The plan is tagged in the merchant-only memo
+ * so a later sync can rebuild the schedule.
+ */
+export function planUpdatePayload(current: PayPalInvoice, plan: PaymentPlan) {
+  const body: Record<string, unknown> = { ...current };
+  for (const k of READ_ONLY) delete body[k];
+  const { metadata: _metadata, ...detail } = current.detail;
+  void _metadata;
+  body.detail = { ...detail, memo: withPlanTag(current.detail.memo, plan) };
+  body.configuration = {
+    ...(current.configuration ?? {}),
+    partial_payment: {
+      allow_partial_payment: true,
+      minimum_amount_due: { currency_code: current.detail.currency_code || "GBP", value: plan.minimumAmountDue.toFixed(2) },
+    },
+  };
+  return body;
 }

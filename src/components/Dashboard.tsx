@@ -15,6 +15,7 @@ import { Logo } from "./Logo";
 import { OverduePanel } from "./OverduePanel";
 import { PayPalConnect } from "./PayPalConnect";
 import { ReminderModal } from "./ReminderModal";
+import { templatePlanOffer } from "@/lib/reminders";
 import { SettingsModal } from "./SettingsModal";
 import { Modal, Spinner } from "./ui";
 import { useSorted } from "./useSorted";
@@ -59,6 +60,17 @@ export function Dashboard() {
   const onError = useCallback((m: string) => toast("err", m), [toast]);
   const onDraft = useCallback((draft: InvoiceDraft, engine: EngineInfo, aiError?: string) => setEditing({ draft, engine, aiError }), []);
 
+  /** After a plan is set up: the offer email, with the schedule and pay link, for review in the usual reminder flow. */
+  const openPlanOffer = useCallback(
+    (inv: Invoice) => {
+      if (!inv.plan) return;
+      const d = templatePlanOffer(inv, c.settings, inv.plan);
+      setViewingId(null);
+      setReminding({ inv, preset: { stage: d.stage, subject: d.subject, body: d.body } });
+    },
+    [c.settings],
+  );
+
   const onConfirmAction = useCallback(
     async (a: PendingAction): Promise<boolean> => {
       if (a.type === "create_invoice") {
@@ -69,6 +81,16 @@ export function Dashboard() {
       if (!inv) {
         toast("err", "That invoice is no longer in your ledger.");
         return false;
+      }
+      if (a.type === "offer_plan") {
+        try {
+          const updated = await c.offerPlan(inv, a.count, a.cadence, a.approvalToken);
+          openPlanOffer(updated);
+          return true;
+        } catch (e) {
+          toast("err", (e as Error).message);
+          return false;
+        }
       }
       if (a.type === "send_reminder") {
         setReminding({ inv, preset: { stage: a.stage, subject: a.subject, body: a.body }, approval: a.approvalToken });
@@ -82,7 +104,7 @@ export function Dashboard() {
         return false;
       }
     },
-    [c, toast],
+    [c, toast, openPlanOffer],
   );
 
   return (
@@ -218,6 +240,14 @@ export function Dashboard() {
           onMarkPaid={(inv) => {
             setViewingId(null);
             setConfirmPaid(inv);
+          }}
+          onOfferPlan={async (inv, count, cadence) => {
+            try {
+              openPlanOffer(await c.offerPlan(inv, count, cadence));
+            } catch (e) {
+              toast("err", (e as Error).message);
+              throw e;
+            }
           }}
           onCancel={async (inv) => {
             try {

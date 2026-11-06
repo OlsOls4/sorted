@@ -1,7 +1,7 @@
 // Pure ledger analytics used by the dashboard, the rules engine and the AI tools.
 
-import { balance, daysBetween, daysOverdue, daysToPay, isOpen, isPaid, round2, todayISO } from "./format";
 import { LATE_PAYMENT_STATUTORY_MARGIN } from "./rates";
+import { balance, daysBetween, daysOverdue, daysToPay, displayStatus, isOpen, isPaid, round2, todayISO } from "./format";
 import type { Invoice, ReminderStage } from "./types";
 
 export interface CustomerSummary {
@@ -59,7 +59,8 @@ export function customerSummaries(ledger: Invoice[], today = todayISO()): Custom
 
 export function overdueInvoices(ledger: Invoice[], today = todayISO()): Invoice[] {
   return ledger
-    .filter((i) => isOpen(i) && balance(i) > 0 && daysOverdue(i, today) > 0)
+    // An invoice on a payment plan that is up to date isn't chased.
+    .filter((i) => isOpen(i) && balance(i) > 0 && daysOverdue(i, today) > 0 && displayStatus(i, today) !== "On plan")
     .sort((a, b) => daysOverdue(b, today) - daysOverdue(a, today));
 }
 
