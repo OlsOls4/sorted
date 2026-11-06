@@ -59,7 +59,7 @@ export function AskSorted({
           ...m,
           ...fresh.map((e) => ({
             role: "assistant" as const,
-            content: `${e.kind === "paid" ? "**Payment in.**" : "**Invoice cancelled.**"} ${e.message} (via ${src(e)})`,
+            content: `${e.kind === "paid" ? "**Payment in.**" : e.kind === "part_paid" ? "**Part payment in.**" : "**Invoice cancelled.**"} ${e.message} (via ${src(e)})`,
           })),
         ]),
       0,
