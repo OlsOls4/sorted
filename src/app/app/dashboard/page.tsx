@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
+import { MoneyOwedBoard } from "@/components/studio/MoneyOwedBoard";
 import { MoneyOwedStudio } from "@/components/studio/MoneyOwedStudio";
+import { chooseDashboard } from "@/lib/studio/licence";
 
-export const metadata: Metadata = { title: "Sorted — Money owed (AG Studio)" };
+// Re-checked hourly, so the page follows the date of AG_STUDIO_LICENSE_KEY without a redeploy.
+export const revalidate = 3600;
 
-// AG_STUDIO_LICENSE_KEY is optional: without it AG Studio runs with a watermark and console
-// warnings, which is fine for local testing and the demo.
+const which = () => chooseDashboard({ key: process.env.AG_STUDIO_LICENSE_KEY, forceOff: process.env.SORTED_FORCE_STUDIO_OFF });
+
+export function generateMetadata(): Metadata {
+  return { title: which() === "studio" ? "Sorted — Money owed (AG Studio)" : "Sorted — Money owed" };
+}
+
+// AG Studio while AG_STUDIO_LICENSE_KEY is set and in date (Europe/London); otherwise the same
+// money-owed view built from Sorted's own components. SORTED_FORCE_STUDIO_OFF=1 forces the latter.
 export default function MoneyOwedPage() {
+  if (which() === "board") return <MoneyOwedBoard />;
   return <MoneyOwedStudio licenseKey={process.env.AG_STUDIO_LICENSE_KEY || undefined} />;
 }
